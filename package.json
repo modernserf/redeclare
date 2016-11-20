@@ -12,7 +12,8 @@
     "test-run": "rollup --format cjs src/test.js | node | faucet",
     "test-watch": "npm run build && npm run test-run",
     "test": "npm run lint && npm run test-run",
-    "watch": "watch test-watch src/"
+    "watch": "watch test-watch src/",
+    "deploy": "npm test && npm publish"
   },
   "repository": {
     "type": "git",
