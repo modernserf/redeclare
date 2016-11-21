@@ -8,11 +8,10 @@
   ],
   "scripts": {
     "build": "mkdirp lib && node config/rollup.js",
-    "lint": "eslint -c config/eslintrc.js src/",
+    "lint": "eslint src/",
     "test-run": "rollup --format cjs src/test.js | node | faucet",
-    "test-watch": "npm run build && npm run test-run",
     "test": "npm run lint && npm run test-run",
-    "watch": "watch test-watch src/",
+    "watch": "watch 'npm run test-run' src/",
     "deploy": "npm test && npm publish"
   },
   "repository": {
@@ -43,5 +42,8 @@
     "rollup-plugin-buble": "^0.14.0",
     "tape": "^4.6.2",
     "watch": "^1.0.1"
+  },
+  "dependencies": {
+    "lodash": "^4.17.2"
   }
 }

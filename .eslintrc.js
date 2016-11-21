@@ -13,6 +13,7 @@ module.exports = {
           "allowTemplateLiterals": true,
         }],
       "comma-dangle": ["error","always-multiline"],
-      "indent": ["error", 4]
+      "indent": ["error", 4],
+      "camelcase": ["off"]
     }
 };

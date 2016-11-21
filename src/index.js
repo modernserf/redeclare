@@ -1,1 +1,2 @@
-export { types } from "./types"
+export { types, createType } from "./types"
+export { createActions } from "./actions"
