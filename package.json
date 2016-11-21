@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "mkdirp lib && node config/rollup.js",
+    "docs": "docco src/*.js",
     "lint": "eslint src/",
     "test-run": "rollup --format cjs src/test.js | node | faucet",
     "test": "npm run lint && npm run test-run",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "babel-eslint": "^7.1.0",
     "buble": "^0.11.5",
+    "docco": "^0.7.0",
     "eslint": "^2.13.0",
     "eslint-config-standard": "^5.3.1",
     "eslint-plugin-import": "^2.2.0",
