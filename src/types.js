@@ -3,20 +3,19 @@
 // types are objects with a `test` method.
 import { getRecord } from "./types-record"
 const keyBy = require("lodash/keyBy")
-const groupBy = require("lodash/groupBy")
 const assign = require("lodash/assign")
 
 // **createType** is a shorthand for building types.
-export function createType (test) {
-    return { test }
-}
-
 export function test_createType (t) {
     const T = createType((val) => val === 3)
     t.true(T.test(3))
     t.false(T.test(4))
     t.false(T.test())
     t.end()
+}
+
+export function createType (test) {
+    return { test }
 }
 
 // ## Base types
@@ -198,12 +197,32 @@ export function test_Tuple (t) {
 
 // **Record** matches a heterogeneous array with named optional fields;
 // for example, the arguments of a function.
-// Records are the building blocks of type definitions.
+// Records are the building blocks of type definitions; record definitons are
+// themselves made of records.
+//
+// See tests for example record definitions.
+//
+// The Record constructor takes a second argument for handling extra arguments.
+// Record types have an additional method `toObject` that converts
+// a matching record to an object.
 //
 // [Record implementation](types-record.html)
 types.Record = getRecord(types)
 
 export function test_Record (t) {
+    const Point = types.Record([
+        ["x", types.Number],
+        ["y", types.Number],
+    ])
+
+    t.true(Point.test([10, 20]))
+    t.false(Point.test([10, "foo"]))
+    t.false(Point.test([10, 20, 30]))
+
+    t.end()
+}
+
+export function test_Record_self_reference (t) {
     const Action = types.Record([
         ["type", types.String],
         ["doc", types.String, "optional"],
@@ -240,36 +259,7 @@ export function test_Record (t) {
     t.end()
 }
 
-const ShapeField = types.Record([
-    ["key", types.String],
-    ["doc", types.String, "optional"],
-    ["type", types.Type],
-    ["optional", types.Exactly("optional"), "optional"],
-])
-
 // **Shape** matches objects with a particular structure.
-types.Shape = (defs) => {
-    const fields = defs.map((def) => {
-        const { object, error, remainder } = ShapeField.buildObject(def)
-
-        // handle recursive shape definitions
-        if (error && remainder.length) {
-            object.type = types.Shape(remainder)
-        } else if (error || remainder.length) {
-            throw new Error(`Invalid shape definition at field "${object.key}"`)
-        }
-        return object
-    })
-
-    const test = (obj) => {
-        if (!obj) return false
-        return fields.every(({ key, type, optional }) =>
-            (optional && !(key in obj)) || type.test(obj[key]))
-    }
-
-    return { test }
-}
-
 export function test_Shape (t) {
     const Point = types.Shape([
         ["x", "has a doc", types.Number],
@@ -316,9 +306,41 @@ export function test_Shape (t) {
     t.end()
 }
 
+types.Shape = (defs) => {
+    const fields = defs.map((def) => {
+        const { object, error, remainder } = ShapeField.buildObject(def)
+
+        // handle recursive shape definitions
+        if (error && remainder.length) {
+            object.type = types.Shape(remainder)
+        } else if (error || remainder.length) {
+            throw new Error(`Invalid shape definition at field "${object.key}"`)
+        }
+        return object
+    })
+
+    const test = (obj) => {
+        if (!obj) return false
+        return fields.every(({ key, type, optional }) =>
+            (optional && !(key in obj)) || type.test(obj[key]))
+    }
+
+    return { test }
+}
+
+const ShapeField = types.Record([
+    ["key", types.String],
+    ["doc", types.String, "optional"],
+    ["type", types.Type],
+    ["optional", types.Exactly("optional"), "optional"],
+])
+
 // **Variant** matches multiple related objects, distinguished by a type field.
 // This is the idea that governs Redux actions, but the pattern appears all over
 // the place. You may also know them as Algebraic Data Types or Disjoint Unions.
+//
+// Variant types include a `creators` field (aliased as `c`),
+// an object map of type names to creator functions.
 //
 // See [Variants Are Not Unions](https://www.youtube.com/watch?v=ZQkIWWTygio)
 // for more on the subject.
@@ -328,26 +350,12 @@ types.Variant = (defs, rootModifier) => {
     })
 
     const creatorMap = keyBy(creators, ({ field }) => field.type)
-    const byType = groupBy(creators, ({ type }) => type)
 
-    const test = (val) => {
-        if (!val || !val.type || !byType[val.type]) { return false }
-
-        return byType[val.type].some((creator) => {
-            const { payloadType } = creatorMap[val.type].field
-
-            // has payload when none expected
-            if ((val.payload && !payloadType) ||
-                // payload doesnt match
-                (payloadType && !payloadType.test(val.payload))) {
-                return false
-            }
-
-            return true
-        })
-    }
+    const test = (val) =>
+        creators.some((creator) => creator.test(val))
 
     return {
+        creators: creatorMap,
         c: creatorMap,
         test,
     }
@@ -378,6 +386,20 @@ export function buildVariant (def, rootModifier) {
 
     creator.type = type
     creator.field = field
+
+    creator.test = (val) => {
+        if (!val || !val.type || type !== val.type) { return false }
+
+        // has payload when none expected
+        if ((val.payload && !field.payloadType) ||
+            // payload doesnt match
+            (field.payloadType && !field.payloadType.test(val.payload))) {
+            return false
+        }
+
+        return true
+    }
+
     return creator
 }
 
