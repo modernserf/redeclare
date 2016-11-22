@@ -1,12 +1,12 @@
+// # Types
+
+// types are objects with a `test` method.
 import { getRecord } from "./types-record"
 const keyBy = require("lodash/keyBy")
 const groupBy = require("lodash/groupBy")
 const assign = require("lodash/assign")
-// # Types
 
-// ## createType
-// types are objects with a `test` method.
-// createType is a shorthand for building types.
+// **createType** is a shorthand for building types.
 export function createType (test) {
     return { test }
 }
@@ -20,7 +20,9 @@ export function test_createType (t) {
 }
 
 // ## Base types
-// the basic JavaScript primitives and objects have types.
+
+// the basic JavaScript primitives and objects have types:
+// **Object**, **Number**, **String**, **Boolean**, **Array** and **Function**.
 export const types = {}
 types.Object = createType((val) =>
     !!val && !Array.isArray(val) && typeof val === "object")
@@ -30,7 +32,7 @@ types.Boolean = createType((val) => val === true || val === false)
 types.Array = createType(Array.isArray)
 types.Function = createType((val) => typeof val === "function")
 
-// matches any value besides null and undefined.
+// **Any** matches any value besides null and undefined.
 types.Any = createType((val) => val !== undefined && val !== null)
 
 export function test_base_types (t) {
@@ -64,7 +66,7 @@ export function test_base_types (t) {
     t.end()
 }
 
-// matches type definitions (i.e. anything with a type method.)
+// **Type** matches type definitions (i.e. anything with a type method.)
 types.Type = createType((val) => val && typeof val.test === "function")
 
 export function test_Type (t) {
@@ -78,7 +80,8 @@ export function test_Type (t) {
 }
 
 // ## Parameterized types
-// matches an exact value.
+
+// **Exactly** matches an exact value.
 types.Exactly = (compare) => createType((val) => val === compare)
 
 export function test_Exactly (t) {
@@ -88,7 +91,7 @@ export function test_Exactly (t) {
     t.end()
 }
 
-// matches an instance of a class.
+// **InstanceOf** matches an instance of a class.
 types.InstanceOf = (ctor) => createType((val) => val instanceof ctor)
 
 export function test_InstanceOf (t) {
@@ -98,7 +101,7 @@ export function test_InstanceOf (t) {
     t.end()
 }
 
-// matches the type, or null/undefined.
+// **Optional** matches the type, or null/undefined.
 types.Optional = (type) => createType((val) =>
     val === null || val === undefined || type.test(val))
 
@@ -111,7 +114,7 @@ export function test_Optional (t) {
     t.end()
 }
 
-// matches one of an array of values.
+// **OneOf** matches one of an array of values.
 types.OneOf = (values) => createType((val) => values.indexOf(val) > -1)
 
 export function test_OneOf (t) {
@@ -123,7 +126,9 @@ export function test_OneOf (t) {
     t.end()
 }
 
-// matches one of an array of types.
+// **OneOfType** matches one of an array of types.
+// Has an additional method `matchType` which returns the first of its types
+// that matches the specified value.
 types.OneOfType = (types) => {
     const matchType = (val, failValue) =>
         types.find((type) => type.test(val)) || failValue
@@ -147,7 +152,8 @@ export function test_OneOfType (t) {
     t.end()
 }
 
-// matches an array of any length where each item matches the provided type.
+// **ArrayOf** matches an array of any length where each item matches
+// the provided type.
 types.ArrayOf = (type) =>
     createType((vals) => types.Array.test(vals) && vals.every(type.test))
 
@@ -159,7 +165,8 @@ export function test_ArrayOf (t) {
     t.end()
 }
 
-// matches an object of any size where each item matches the provided type.
+// **ObjectOf** matches an object of any size where each item matches
+// the provided type.
 types.ObjectOf = (type) => createType((vals) => types.Object.test(vals) &&
     Object.keys(vals).every((key) => type.test(vals[key])))
 
@@ -172,7 +179,7 @@ export function test_ObjectOf (t) {
 
 // ## Shape types
 
-// matches an array of fixed length and shape.
+// **Tuple** matches an array of fixed length and shape.
 types.Tuple = (shape) => createType((vals) =>
     vals.length === shape.length && shape.every((type, i) =>
         type.test(vals[i])))
@@ -189,7 +196,11 @@ export function test_Tuple (t) {
     t.end()
 }
 
-// used internally for building type definitions
+// **Record** matches a heterogeneous array with named optional fields;
+// for example, the arguments of a function.
+// Records are the building blocks of type definitions.
+//
+// [Record implementation](types-record.html)
 types.Record = getRecord(types)
 
 export function test_Record (t) {
@@ -236,8 +247,7 @@ const ShapeField = types.Record([
     ["optional", types.Exactly("optional"), "optional"],
 ])
 
-// Shape(type) -> type
-// Shape([["foo", type], ["bar", type]]) -> { foo: type, bar: type }
+// **Shape** matches objects with a particular structure.
 types.Shape = (defs) => {
     const fields = defs.map((def) => {
         const { object, error, remainder } = ShapeField.buildObject(def)
@@ -306,57 +316,15 @@ export function test_Shape (t) {
     t.end()
 }
 
-const VariantModifier = types.Shape([
-    ["mapType", types.Function],
-    ["mapAction", types.Function],
-])
-
-const VariantField = types.Record([
-    ["type", types.String],
-    ["doc", types.String, "optional"],
-    ["modifier", VariantModifier, "optional"],
-    ["payloadType", types.Type, "optional"],
-], types.Shape)
-
-const idModifier = { mapType: (x) => x, mapAction: (x) => x }
-
-export const namespace = (ns) => ({ mapType: ns, mapAction: (x) => x })
-
-export const addFields = (fieldCreators) => ({
-    mapType: (x) => x,
-    mapAction: (action) => {
-        const nextPayload = assign({}, action.payload)
-        for (const key in fieldCreators) {
-            nextPayload[key] = fieldCreators[key](action)
-        }
-        return assign({}, action, { payload: nextPayload })
-    },
-})
-
-export const composeModifiers = (a = {}, b = {}) => {
-    const _a = assign({}, idModifier, a)
-    const _b = assign({}, idModifier, b)
-
-    return {
-        mapType: (type) => _a.mapType(_b.mapType(type)),
-        mapAction: (action) => _a.mapAction(_b.mapAction(action)),
-    }
-}
-
+// **Variant** matches multiple related objects, distinguished by a type field.
+// This is the idea that governs Redux actions, but the pattern appears all over
+// the place. You may also know them as Algebraic Data Types or Disjoint Unions.
+//
+// See [Variants Are Not Unions](https://www.youtube.com/watch?v=ZQkIWWTygio)
+// for more on the subject.
 types.Variant = (defs, rootModifier) => {
     const creators = defs.map((def) => {
-        const field = VariantField.toObject(def)
-        const { mapType, mapAction } = composeModifiers(
-            field.modifier, rootModifier)
-
-        const type = mapType(field.type)
-        const creator = field.payloadType
-            ? (payload) => mapAction({ type, payload })
-            : () => mapAction({ type })
-
-        creator.type = type
-        creator.field = field
-        return creator
+        return buildVariant(def, rootModifier)
     })
 
     const creatorMap = keyBy(creators, ({ field }) => field.type)
@@ -383,6 +351,34 @@ types.Variant = (defs, rootModifier) => {
         c: creatorMap,
         test,
     }
+}
+
+const VariantModifier = types.Shape([
+    ["mapType", types.Function],
+    ["mapAction", types.Function],
+])
+
+types.Variant.Field = types.Record([
+    ["type", types.String],
+    ["doc", types.String, "optional"],
+    ["modifier", VariantModifier, "optional"],
+    ["payloadType", types.Type, "optional"],
+], types.Shape)
+
+// this is shared with createActions
+export function buildVariant (def, rootModifier) {
+    const field = types.Variant.Field.toObject(def)
+    const { mapType, mapAction } = composeModifiers(
+        field.modifier, rootModifier)
+
+    const type = mapType(field.type)
+    const creator = field.payloadType
+        ? (payload) => mapAction({ type, payload })
+        : () => mapAction({ type })
+
+    creator.type = type
+    creator.field = field
+    return creator
 }
 
 export function test_Variant (t) {
@@ -412,6 +408,37 @@ export function test_Variant (t) {
         { type: "baz", payload: { a: 10, b: 20 } })
 
     t.end()
+}
+
+// ### Variant modifiers
+// these functions change the default construction of variant objects.
+
+// **namespace** the type of a variant.
+export const namespace = (ns) => ({ mapType: ns, mapAction: (x) => x })
+
+// **addFields** to a variant body on construction
+export const addFields = (fieldCreators) => ({
+    mapType: (x) => x,
+    mapAction: (action) => {
+        const nextPayload = assign({}, action.payload)
+        for (const key in fieldCreators) {
+            nextPayload[key] = fieldCreators[key](action)
+        }
+        return assign({}, action, { payload: nextPayload })
+    },
+})
+
+// **composeModifiers** allows a variant to have multiple modifiers.
+const idModifier = { mapType: (x) => x, mapAction: (x) => x }
+
+export function composeModifiers (a = {}, b = {}) {
+    const _a = assign({}, idModifier, a)
+    const _b = assign({}, idModifier, b)
+
+    return {
+        mapType: (type) => _a.mapType(_b.mapType(type)),
+        mapAction: (action) => _a.mapAction(_b.mapAction(action)),
+    }
 }
 
 export function test_Variant_modifiers (t) {
