@@ -9,6 +9,7 @@
   "scripts": {
     "build": "mkdirp lib && node config/rollup.js",
     "docs": "docco src/*.js",
+    "docs-publish": ". config/publish.sh",
     "lint": "eslint src/",
     "test-run": "rollup --format cjs src/test.js | node | faucet",
     "test": "npm run lint && npm run test-run",
