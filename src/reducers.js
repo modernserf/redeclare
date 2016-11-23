@@ -3,24 +3,32 @@ import assign from "lodash/assign"
 import { types } from "./types"
 import { createActions } from "./actions"
 
+// **createReducerCreator** is a higher-order function for making reducers from object maps,
+// with the signature
+// `(actions, [scopePath]) => (reducersPerAction, initState, [scopePath]) => reducer`.
+
 export function test_createReducer (t) {
-    const createReducer = createReducerCreator(createActions([
+    // `createReducerCreator` uses the action schema to check whether an action exists,
+    // and transparently handle namespaced actions.
+    const actions = createActions([
         ["foo"],
         ["bar", types.String],
         ["baz",
             ["a", types.Number],
             ["b", types.Number]],
-    ]))
+    ])
+
+    const createReducer = createReducerCreator(actions)
 
     const initState = { count: 0, message: "hello" }
 
-    const merge = (a, b) => assign({}, a, b)
-
+    // the function returned from `createReducerCreator` takes an object map of reducers
+    // that handle each action, with the signature `(state, action.payload, action) => state`.
     const reducer = createReducer({
-        foo: (state) => merge(state, { count: state.count + 1 }),
-        bar: (state, message) => merge(state, { message }),
+        foo: (state) => assign({}, state, { count: state.count + 1 }),
+        bar: (state, message) => assign({}, state, { message }),
         baz: (state, { a, b }, { meta }) =>
-            merge(state, { count: a + b, message: meta || state.message }),
+            assign({}, state, { count: a + b, message: meta || state.message }),
     }, initState)
 
     t.equal(initState, reducer(undefined, { type: "@@INIT" }))
@@ -37,6 +45,7 @@ export function test_createReducer (t) {
     t.end()
 }
 
+// An unknown action in the reducer-per-action map will throw an error.
 export function test_createReducer_unknown_action (t) {
     const createReducer = createReducerCreator(createActions([
         ["foo"],
@@ -51,6 +60,7 @@ export function test_createReducer_unknown_action (t) {
     t.end()
 }
 
+// Unexpected types will also throw an error.
 export function test_createReducer_incorrect_format (t) {
     const createReducer = createReducerCreator(createActions([
         ["foo"],
@@ -66,6 +76,7 @@ export function test_createReducer_incorrect_format (t) {
     t.end()
 }
 
+// `createReducerCreator` also handles scoped actions.
 export function test_createReducer_namespace_actions (t) {
     const actions = createActions([
         ["add"],
@@ -81,12 +92,49 @@ export function test_createReducer_namespace_actions (t) {
         ])],
     ])
 
+    // The second argument is a scope path for traversing the actions object.
     const createReducer = createReducerCreator(actions, ["b", "c"])
 
+    // This reducer handles all of the actions in its scope. It will handle
+    // `add` and `b/c/add` as the same action, but will ignore `a/add`.
     const reducer = createReducer({
         add: (state) => state + 1,
         addMany: (state, value) => state + value,
     }, 0)
+
+    // handles root action `add`
+    t.equal(1, reducer(0, actions.creators.add()))
+    // handles parent action `b/addMany`
+    t.equal(10, reducer(0, actions.creators.b.addMany(10)))
+    // handles own action `b/c/add`
+    t.equal(1, reducer(0, actions.creators.b.c.add()))
+    // does not handle sibling action `a/add`
+    t.equal(0, reducer(0, actions.creators.a.add()))
+
+    t.end()
+}
+
+export function test_createReducer_combined_scopes (t) {
+    const actions = createActions([
+        ["add"],
+        ["a", createActions([
+            ["add"],
+            ["addMany", types.Number],
+        ])],
+        ["b", createActions([
+            ["addMany", types.Number],
+            ["c", createActions([
+                ["add"],
+            ])],
+        ])],
+    ])
+
+    const createReducer = createReducerCreator(actions, ["b"])
+
+    const reducer = createReducer({
+        add: (state) => state + 1,
+        addMany: (state, value) => state + value,
+    }, 0, ["c"])
 
     // gets root action
     t.equal(1, reducer(0, actions.creators.add()))
@@ -136,9 +184,6 @@ export function test_createReducer_deep_namespaces (t) {
 
     t.end()
 }
-
-// TODO: how to handle namespaces
-// - reducer tree matches action tree { foo: { bar: handler } }
 
 export const createReducerCreator = (actions, rootScopePath = []) =>
     (baseReducers, initState, ownScopePath = []) => {
