@@ -1,9 +1,8 @@
 // # Actions
+
 import { types, buildVariant, namespace, composeModifiers } from "./types"
 
-// **createActions** takes an action schema and generates a type that matches actions
-// in that schema, much as `types.Variant` does. Likewise, it creates an object map of
-// action creators to generate those actions.
+// **createActions** takes an action schema and generates a type that matches actions in that schema, much as `types.Variant` does. Likewise, it creates an object map of action creators to generate those actions.
 export function test_createActions (t) {
     const actions = createActions([
         ["foo", "no payload"],
@@ -56,8 +55,7 @@ export function test_createActions (t) {
     t.end()
 }
 
-// In addition, `createActions` also allows schemas to be nested, namespacing the actions
-// based on their placement in the tree.
+// In addition, `createActions` also allows schemas to be nested, namespacing the actions based on their placement in the tree.
 export function test_createActions_namespacing (t) {
     const actions = createActions([
         ["foo", "a global action"],

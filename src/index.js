@@ -26,4 +26,6 @@ export {
 // [Actions](actions.html)
 export { createActions } from "./actions"
 // [Reducers](reducers.html)
-export { createReducerCreator } from "./reducers"
+export { createReducer, createReducerCreator } from "./reducers"
+// [Selectors](selectors.html)
+export { createSelectors, select } from "./selectors"

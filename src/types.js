@@ -195,16 +195,11 @@ export function test_Tuple (t) {
     t.end()
 }
 
-// **Record** matches a heterogeneous array with named optional fields;
-// for example, the arguments of a function.
-// Records are the building blocks of type definitions; record definitons are
-// themselves made of records.
+// **Record** matches a heterogeneous array with named optional fields; for example, the arguments of a function. Records are the building blocks of type definitions; record definitons are themselves made of records.
 //
 // See tests for example record definitions.
 //
-// The Record constructor takes a second argument for handling extra arguments.
-// Record types have an additional method `toObject` that converts
-// a matching record to an object.
+// The Record constructor takes a second argument for handling extra arguments. Record types have an additional method `toObject` that converts a matching record to an object.
 //
 // [Record implementation](types-record.html)
 types.Record = getRecord(types)
@@ -335,15 +330,11 @@ const ShapeField = types.Record([
     ["optional", types.Exactly("optional"), "optional"],
 ])
 
-// **Variant** matches multiple related objects, distinguished by a type field.
-// This is the idea that governs Redux actions, but the pattern appears all over
-// the place. You may also know them as Algebraic Data Types or Disjoint Unions.
+// **Variant** matches multiple related objects, distinguished by a type field. This is the idea that governs Redux actions, but the pattern appears all over the place. You may also know them as Algebraic Data Types or Disjoint Unions.
 //
-// Variant types include a `creators` field (aliased as `c`),
-// an object map of type names to creator functions.
+// Variant types include a `creators` field (aliased as `c`), an object map of type names to creator functions.
 //
-// See [Variants Are Not Unions](https://www.youtube.com/watch?v=ZQkIWWTygio)
-// for more on the subject.
+// See [Variants Are Not Unions](https://www.youtube.com/watch?v=ZQkIWWTygio) for more on the subject.
 types.Variant = (defs, rootModifier) => {
     const creators = defs.map((def) => {
         return buildVariant(def, rootModifier)
