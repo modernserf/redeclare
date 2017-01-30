@@ -1,9 +1,11 @@
 // Connector
-import { createSchema, reducer, selector } from "./schema"
-
-function mock_connect (mapState, actions) {
-    return { mapState, actions }
-}
+const { bindActionCreators } = require("redux")
+const { connect } = require("react-redux")
+const keyBy = require("lodash/keyBy")
+const mapValues = require("lodash/mapValues")
+import { createSchema, reducer, selector, scope } from "./schema"
+import { getScope, scopedAction, findIn } from "./scope"
+import { select } from "./selector"
 
 export function test_createConnector (t) {
     const schema = createSchema({
@@ -16,14 +18,13 @@ export function test_createConnector (t) {
         bazAndQuux: selector(["baz", "quux"], ({ baz, quux }) => `${baz}-${quux}`),
     })
 
-    const connect = createConnector(mock_connect, schema)
+    const initState = { baz: 10, quux: "str" }
+    const connect = mock_connector(schema, initState)
 
-    const { mapState, actions } = connect(["baz", "bazAndQuux"], ["bar"])
+    const { state, actions } = connect(["baz", "bazAndQuux"], ["bar"])
 
-    const state = { baz: 10, quux: "str" }
-    const mappedState = mapState(state)
-    t.equal(mappedState.baz, 10)
-    t.equal(mappedState.bazAndQuux, "10-str")
+    t.equal(state.baz, 10)
+    t.equal(state.bazAndQuux, "10-str")
 
     t.deepEqual(actions.bar("str"), { type: "bar", value: "str" })
 
@@ -48,52 +49,111 @@ export function test_createConnector_renamed_keys (t) {
         bazAndQuux: selector(["baz", "quux"], ({ baz, quux }) => `${baz}-${quux}`),
     })
 
-    const connect = createConnector(mock_connect, schema)
-    const { mapState, actions } = connect({ bazRenamed: "baz" }, { barRenamed: "bar" })
+    const initState = { baz: 10, quux: "str" }
+    const connect = mock_connector(schema, initState)
+    const { state, actions } = connect({ bazRenamed: "baz" }, { barRenamed: "bar" })
 
-    const state = { baz: 10, quux: "str" }
-    const mappedState = mapState(state)
-    t.equal(mappedState.bazRenamed, 10)
+    t.equal(state.bazRenamed, 10)
 
     t.deepEqual(actions.barRenamed("str"), { type: "bar", value: "str" })
     t.end()
 }
 
-export function createConnector (connect, schema) {
+export function test_createConnector_scope (t) {
+    const counter = reducer({
+        inc: (state) => state + 1,
+        add: (state, { value }) => state + value,
+    }, 0)
+
+    const schema = createSchema({
+        foo: {
+            inc: [],
+            add: ["value"],
+        },
+        bar: {
+            inc: [],
+            add: ["value"],
+        },
+    }, {
+        parentValue: () => 10,
+        foo: scope({ counter }),
+        bar: scope({
+            counter,
+            countPlusTen: selector(
+                ["counter", "parentValue"],
+                ({ counter, parentValue }) => counter + parentValue),
+        }),
+        fooPlusBarPlusTen: selector(
+            { foo: "foo", bar: ["bar", "countPlusTen"] },
+            ({ foo, bar }) => foo.counter + bar),
+    })
+
+    const initState = { parentValue: 10, foo: { counter: 5 }, bar: { counter: 3 } }
+    const rootConnect = mock_connector(schema, initState)
+
+    const {
+        state: rootState,
+    } = rootConnect({ val: "parentValue", count: ["bar", "countPlusTen"] }, {})
+
+    t.equal(rootState.val, 10)
+    t.equal(rootState.count, 13)
+
+    const barConnect = mock_connector(schema, initState, ["bar"])
+    const {
+        state: barState,
+        actions: barActions,
+    } = barConnect(["fooPlusBarPlusTen", "counter"], ["inc"])
+
+    t.equal(barState.fooPlusBarPlusTen, 18)
+    t.equal(barState.counter, 3)
+    t.deepEqual(barActions.inc(), scopedAction("bar", { type: "inc" }))
+
+    t.end()
+}
+
+export function createConnector (schema) {
     return (selectorIDs, actionIDs, mergeProps, options) => {
-        const mapStateToProps = typeof selectorIDs === "function"
-            ? selectorIDs
-            : mapState(schema.selectors, selectorIDs, "selector")
-        const mapDispatchToProps = typeof actionIDs === "function"
-            ? actionIDs
-            : pickAndRename(schema.actions, actionIDs, "action type")
-        return connect(mapStateToProps, mapDispatchToProps, mergeProps, options)
+        const c = connector(schema, selectorIDs, actionIDs)
+        const conn = connect(c.mapStateToProps, c.mapDispatchToProps, mergeProps, options)
+        return (Component) => getScope(conn(Component))
     }
+}
+
+function connector (schema, selectorIDs, actionIDs) {
+    const mapStateToProps = typeof selectorIDs === "function"
+        ? selectorIDs
+        : mapState(schema.selectors, selectorIDs, "selector")
+    const mapDispatchToProps = typeof actionIDs === "function"
+        ? actionIDs
+        : mapActions(schema.actions, actionIDs, "action type")
+    return { mapStateToProps, mapDispatchToProps }
 }
 
 function mapState (selectors, selectorIDs, err) {
-    const picked = pickAndRename(selectors, selectorIDs, err)
-    return (state) => {
-        const res = {}
-        for (const key in picked) { res[key] = picked[key](state) }
-        return res
+    return (state, { scope }) => select(state, selectors, selectorIDs, scope)
+}
+
+function mapActions (actions, actionIDs, err) {
+    return (dispatch, { scope } = {}) => {
+        const picked = pickAndRename(actions, actionIDs, scope)
+        return bindActionCreators(picked, dispatch)
     }
 }
 
-function pickAndRename (object, keys, err) {
-    const picked = {}
-    if (Array.isArray(keys)) {
-        for (var i = 0; i < keys.length; i++) {
-            const key = keys[i]
-            if (!object[key]) { throw new Error(`Unknown ${err}: ${key}`) }
-            picked[key] = object[key]
-        }
-    } else {
-        for (const renamedKey in keys) {
-            const key = keys[renamedKey]
-            if (!object[key]) { throw new Error(`Unknown ${err}: ${key}`) }
-            picked[renamedKey] = object[key]
-        }
+function pickAndRename (object, keys, scope) {
+    const keyMap = Array.isArray(keys) ? keyBy(keys, (k) => k) : keys
+    return mapValues(keyMap, (actionType) => {
+        const found = findIn(object, scope, actionType)
+        if (!found) { throw new Error(`Unknown action type: ${actionType}`) }
+        return found
+    })
+}
+
+function mock_connector (schema, initState, scope = []) {
+    return (selectorIDs, actionIDs) => {
+        const c = connector(schema, selectorIDs, actionIDs)
+        const state = c.mapStateToProps(initState, { scope })
+        const actions = c.mapDispatchToProps((x) => x, { scope })
+        return { state, actions }
     }
-    return picked
 }

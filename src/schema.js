@@ -3,6 +3,7 @@ const get = require("lodash/get")
 const { combineReducers } = require("redux")
 import { createActions } from "./actions"
 import { createReducerCreator } from "./reducers"
+import { select } from "./selector"
 
 // **createSchema** creates a root reducer and an object map of selectors -- functions that return segments of the app state.
 
@@ -165,6 +166,10 @@ function _createSchema (actions, defs, selectors, scope) {
     return { actions, reducer: combineReducers(reducers), selectors }
 }
 
+function createSelector (selectors, dependencies, mapParams, scope) {
+    return (state) => mapParams(select(state, selectors, dependencies, scope))
+}
+
 export function reducer (reducer, initState) {
     return { type: "reducer", reducer, initState }
 }
@@ -175,34 +180,4 @@ export function selector (dependencies, selector) {
 
 export function scope (selectors) {
     return { type: "scope", selectors }
-}
-
-function createSelector (selectors, dependencies, selector, scope) {
-    return (state) => {
-        const params = {}
-        const pairs = toPairs(dependencies)
-        for (let i = 0; i < pairs.length; i++) {
-            const [key, value] = pairs[i]
-            const dep = findIn(selectors, scope, value)
-            if (!dep) { throw new Error(`Unknown selector dependency: ${key}`) }
-            params[key] = dep(state)
-        }
-        return selector(params)
-    }
-}
-
-// find key in object on path, starting at max depth and working back up
-function findIn (obj, path, key) {
-    const keyArr = Array.isArray(key) ? key : [key]
-    const atPath = get(obj, path.concat(keyArr))
-    if (atPath) { return atPath }
-    if (!path.length) { return null }
-    return findIn(obj, path.slice(0, -1), key)
-}
-
-function toPairs (obj) {
-    if (Array.isArray(obj)) { return obj.map((key) => [key, key]) }
-    const arr = []
-    for (const key in obj) { arr.push([key, obj[key]]) }
-    return arr
 }
