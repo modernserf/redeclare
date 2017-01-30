@@ -2,7 +2,7 @@
 const get = require("lodash/get")
 const { combineReducers } = require("redux")
 import { createActions } from "./actions"
-import { createReducerCreator } from "./reducers"
+import { createReducer } from "./reducers"
 import { select } from "./selector"
 
 // **createSchema** creates a root reducer and an object map of selectors -- functions that return segments of the app state.
@@ -131,36 +131,37 @@ export function test_createSchema_scopes (t) {
 }
 
 export function createSchema (actionDefs, defs) {
-    const actions = createActions(actionDefs)
-    return _createSchema(actions, defs, {}, [])
+    return _createSchema(createActions(actionDefs), defs, {}, [])
 }
 
 function _createSchema (actions, defs, selectors, scope) {
     const reducers = {}
-    const createReducer = createReducerCreator(actions, scope)
-    for (const key in defs) {
+
+    const createMapReducer = ({ reducer, initState }) =>
+        createReducer(actions, reducer, initState, scope)
+
+    const mapSchemaDef = (def, key) => {
         const nextScope = scope.concat([key])
-        const def = defs[key]
+        const defaultSelector = (state) => get(state, nextScope)
+
         switch (def.type) {
         case "reducer":
-            reducers[key] = createReducer(def.reducer, def.initState)
-            selectors[key] = (state) => get(state, nextScope)
-            break
+            return [createMapReducer(def), defaultSelector]
         case "selector":
-            selectors[key] = createSelector(selectors, def.dependencies, def.selector, scope)
-            break
+            return [null, createSelector(selectors, def.dependencies, def.selector, scope)]
         case "scope":
             const childSchema = _createSchema(actions, def.selectors, selectors, nextScope)
-            reducers[key] = childSchema.reducer
-            selectors[key] = (state) => get(state, nextScope)
-            for (const selectorKey in childSchema.selectors) {
-                selectors[key][selectorKey] = childSchema.selectors[selectorKey]
-            }
-            break
+            const selector = Object.assign(defaultSelector, childSchema.selectors)
+            return [childSchema.reducer, selector]
         default:
-            reducers[key] = def
-            selectors[key] = (state) => get(state, nextScope)
+            return [def, defaultSelector]
         }
+    }
+
+    for (const key in defs) {
+        const [reducer, selector] = mapSchemaDef(defs[key], key)
+        if (reducer) { reducers[key] = reducer }
+        if (selector) { selectors[key] = selector }
     }
 
     return { actions, reducer: combineReducers(reducers), selectors }

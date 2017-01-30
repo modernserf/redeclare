@@ -1,4 +1,5 @@
 const isPlainObject = require("lodash/isPlainObject")
+const mapValues = require("lodash/mapValues")
 import { buildScope, scopedAction } from "./scope"
 // # Actions
 
@@ -60,14 +61,11 @@ export function test_createActions_with_scopes (t) {
 }
 
 export function createActions (schema, scope = []) {
-    const actions = {}
-    for (const type in schema) {
-        const ac = schema[type]
-        actions[type] = createAction(type, ac, scope)
-        actions[type].type = type
-    }
-
-    return actions
+    return mapValues(schema, (args, type) => {
+        const action = createAction(type, args, scope)
+        action.type = type
+        return action
+    })
 }
 
 function createAction (type, args, scope) {
