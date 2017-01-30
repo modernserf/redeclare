@@ -34,7 +34,6 @@ export function test_createConnector (t) {
     t.throws(() => {
         connect(["baz"], ["bar", "unknownAction"])
     })
-
     t.end()
 }
 
@@ -57,7 +56,6 @@ export function test_createConnector_renamed_keys (t) {
     t.equal(mappedState.bazRenamed, 10)
 
     t.deepEqual(actions.barRenamed("str"), { type: "bar", value: "str" })
-
     t.end()
 }
 
