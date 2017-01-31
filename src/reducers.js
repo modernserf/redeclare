@@ -105,11 +105,6 @@ export function createReducer (actions, baseReducers, initState, scope = []) {
     return reducer
 }
 
-// `createReducerCreator` is a curried version of createReducer that takes the actions schema as its first argument and returns a createReducer function already bound to those actions.
-export const createReducerCreator = (actions, scope) =>
-    (baseReducers, initState) =>
-        createReducer(actions, baseReducers, initState, scope)
-
 function inScope (actions, type, scope) {
     if (!actions) { return false }
     if (actions[type]) { return true }

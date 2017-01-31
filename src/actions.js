@@ -6,10 +6,9 @@ import { buildScope, scopedAction } from "./scope"
 // **createActions** takes an action schema and returns an object map of action creators to generate those actions.
 export function test_createActions (t) {
     const actions = createActions({
-        foo: [], // no arguments
-        bar: ["a"], // 1 argument
-        baz: ["a", "b", "c"], // multiple arguments
-        quux: ["a", "b", "c", "d", "e"], // too many arguments
+        foo: [],                            // no arguments
+        bar: ["a"],                         // 1 argument
+        baz: ["a", "b", "c"],               // multiple arguments
     })
 
     t.deepEqual(actions.foo(), { type: "foo" })
@@ -83,8 +82,8 @@ function createAction (type, args, scope) {
     case 2:
         return (val0, val1) => f({ type, [arg0]: val0, [arg1]: val1 })
     default:
-        return function (...vals) {
-            const action = { type }
+        return function actionCreator (...vals) {
+            const action = { type: type }
             for (let i = 0; i < args.length; i++) { action[args[i]] = vals[i] }
             return f(action)
         }

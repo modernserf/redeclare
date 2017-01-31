@@ -6,7 +6,7 @@ build("src/index.js", "lib/index.js")
 function build (entry, dest) {
     rollup.rollup({
         entry: entry,
-        plugins: [ buble() ],
+        plugins: [ buble({ transforms: { computedProperty: true } }) ],
     }).then((bundle) => bundle.write({
         dest: dest,
         format: "cjs",

@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+button, label, input {
+    display: block;
+    flex-grow: 1;
+    margin: 1em
+}
+
+button {
+    font-size: 1em;
+}
+
+.row {
+    display: flex;
+}
