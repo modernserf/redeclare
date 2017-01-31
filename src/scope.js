@@ -39,15 +39,17 @@ export function getScope (ChildComponent) {
     const ScopeConnector = class ScopeConnector extends Component {
         constructor (props, context) {
             super(props, context)
-            this.scopePath = context.scopePath
+            this.scopePath = context.scopePath || []
         }
         render () {
-            return createElement(ChildComponent, { scopePath: this.scopePath })
+            const props = Object.assign({ scope: this.scopePath }, this.props)
+            return createElement(ChildComponent, props)
         }
     }
     ScopeConnector.contextTypes = {
         scopePath: PropTypes.arrayOf(PropTypes.string),
     }
+    return ScopeConnector
 }
 
 // find key in object on path, starting at max depth and working back up
