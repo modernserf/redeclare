@@ -19,10 +19,10 @@
 // TODO: overview of public API
 
 // [Actions](actions.html)
-export { createActions } from "./actions"
+export { createActions } from "./actions";
 // [Reducers](reducers.html)
-export { createReducer } from "./reducers"
+export { createReducer } from "./reducers";
 // [Selectors](selectors.html)
-export { createSchema, selector, reducer, scope } from "./schema"
+export { createSchema, selector, reducer, scope } from "./schema";
 // [Connector](connector.html)
-export { createConnector } from "./connector"
+export { createConnector } from "./connector";

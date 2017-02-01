@@ -1,188 +1,149 @@
-import React, { PropTypes } from "react"
-import "./App.css"
-import { connect } from "./state"
+import React from "react";
+import "./App.css";
+import { connect } from "./state";
 
-const TodoInput = connect(
-    [],
-    { onSubmit: "addedTodo" })(
-class TodoInput extends React.Component {
-    static propTypes = {
-        onSubmit: PropTypes.func.isRequired,
+const TodoInput = connect([], { onSubmit: "addedTodo" })(
+    class TodoInput extends React.Component {
+        constructor() {
+            super();
+            this.state = { text: "" };
+            this.onSubmit = e => {
+                e.preventDefault();
+                this.props.onSubmit(this.state.text);
+                this.setState({ text: "" });
+            };
+            this.onChange = e => {
+                this.setState({ text: e.target.value });
+            };
+        }
+        render() {
+            return (
+                <form onSubmit={this.onSubmit}>
+                    <input
+                        type="text"
+                        placeholder="What needs to be done?"
+                        value={this.state.text}
+                        onChange={this.onChange}
+                    />
+                </form>
+            );
+        }
     }
-    state = { text: "" }
-    onSubmit = (e) => {
-        e.preventDefault()
-        this.props.onSubmit(this.state.text)
-        this.setState({ text: "" })
-    }
-    onChange = (e) => {
-        this.setState({ text: e.target.value })
-    }
-    render () {
-        return (
-            <form onSubmit={this.onSubmit}>
-                <input type="text" placeholder="What needs to be done?"
-                    value={this.state.text}
-                    onChange={this.onChange}/>
-            </form>
-        )
-    }
-})
+);
 
 class TodoText extends React.Component {
-    static propTypes = {
-        todo: PropTypes.object.isRequired,
-        onSubmit: PropTypes.func.isRequired,
-    }
-    state = {
-        editMode: false,
-        editText: "",
-    }
-    startEditMode = () => {
-        this.setState({
-            editMode: true,
-            editText: this.props.todo.text,
-        })
-    }
-    onChange = (e) => {
-        this.setState({
-            editText: e.target.value,
-        })
-    }
-    onSubmit = (e) => {
-        e.preventDefault()
-        this.props.onSubmit(this.state.editText)
-        this.setState({
+    constructor() {
+        super();
+        this.state = {
             editMode: false,
-            editText: "",
-        })
+            editText: ""
+        };
+        this.startEditMode = () => {
+            this.setState({
+                editMode: true,
+                editText: this.props.todo.text
+            });
+        };
+        this.onChange = e => {
+            this.setState({
+                editText: e.target.value
+            });
+        };
+        this.onSubmit = e => {
+            e.preventDefault();
+            this.props.onSubmit(this.state.editText);
+            this.setState({
+                editMode: false,
+                editText: ""
+            });
+        };
     }
-    render () {
-        const { todo: { text } } = this.props
-        const { editMode, editText } = this.state
+    render() {
+        const { todo: { text } } = this.props;
+        const { editMode, editText } = this.state;
         if (!editMode) {
-            return (
-                <div onDoubleClick={this.startEditMode}>{text}</div>
-            )
+            return <div onDoubleClick={this.startEditMode}>{text}</div>;
         }
         return (
             <form onSubmit={this.onSubmit}>
-                <input type="text" value={editText} onChange={this.onChange}/>
+                <input type="text" value={editText} onChange={this.onChange} />
             </form>
-        )
+        );
     }
 }
 
-const TodoItem = connect(
-    [],
-    { onToggle: "toggledStatus", onEdit: "editedTodo", onRemove: "deletedTodo" })(
-class TodoItem extends React.Component {
-    static propTypes = {
-        todo: PropTypes.object.isRequired,
-        onToggle: PropTypes.func.isRequired,
-        onEdit: PropTypes.func.isRequired,
-        onRemove: PropTypes.func.isRequired,
-    }
-    render () {
-        const { todo, onToggle, onEdit, onRemove } = this.props
-        return (
-            <div>
-                <input type="checkbox" checked={todo.status === "completed"}
-                    onChange={() => onToggle(todo.id)}/>
-                <TodoText todo={todo} onSubmit={(text) => onEdit(todo.id, text)}/>
-                <button onClick={() => onRemove(todo.id)}>✖️</button>
-            </div>
-        )
-    }
-})
+const TodoItem = connect([], {
+    onToggle: "toggledStatus",
+    onEdit: "editedTodo",
+    onRemove: "deletedTodo"
+})(({ todo, onToggle, onEdit, onRemove }) => (
+    <div>
+        <input
+            type="checkbox"
+            checked={todo.status === "completed"}
+            onChange={() => onToggle(todo.id)}
+        />
+        <TodoText todo={todo} onSubmit={text => onEdit(todo.id, text)} />
+        <button onClick={() => onRemove(todo.id)}>✖️</button>
+    </div>
+));
 
-const TodoList = connect(
-    { todos: "visibleTodos" },
-    {})(
-class TodoList extends React.Component {
-    static propTypes = {
-        todos: PropTypes.array.isRequired,
-    }
-    render () {
-        return (
-            <ol>{this.props.todos.map((todo) =>
-                <li key={todo.id}><TodoItem todo={todo}/></li>
-            )}</ol>
-        )
-    }
-})
+const TodoList = connect({ todos: "visibleTodos" }, {})(({ todos }) => (
+    <ol>
+        {todos.map(todo => <li key={todo.id}><TodoItem todo={todo} /></li>)}
+    </ol>
+));
 
-const ItemsLeft = connect(
-    ["itemsLeft"],
-    {})(
-class ItemsLeft extends React.Component {
-    static propTypes = {
-        itemsLeft: PropTypes.number.isRequired,
-    }
-    render () {
-        const { itemsLeft } = this.props
-        switch (itemsLeft) {
+const ItemsLeft = connect(["itemsLeft"], {})(({ itemsLeft }) => {
+    switch (itemsLeft) {
         case 0:
-            return <div>No items left</div>
+            return <div>No items left</div>;
         case 1:
-            return <div>1 item left</div>
+            return <div>1 item left</div>;
         default:
-            return <div>{itemsLeft} items left</div>
-        }
+            return <div>{itemsLeft} items left</div>;
     }
-})
+});
 
 const statuses = [
     { id: "all", label: "All" },
     { id: "active", label: "Active" },
-    { id: "completed", label: "Completed" },
-]
+    { id: "completed", label: "Completed" }
+];
 
-const ViewStatus = connect(
-    ["viewStatus"],
-    { onChange: "setViewStatus" })(
-class ViewStatus extends React.Component {
-    static propTypes = {
-        viewStatus: PropTypes.oneOf(statuses.map((s) => s.id)).isRequired,
-        onChange: PropTypes.func.isRequired,
-    }
-    render () {
-        const { viewStatus, onChange } = this.props
-        return (
-            <ul>{statuses.map(({ id, label }) =>
-                <li key={id} className={viewStatus === id ? "active" : ""}>
-                    <button onClick={() => onChange(id)}>{label}</button>
-                </li>
-            )}</ul>
-        )
-    }
-})
+const ViewStatus = connect(["viewStatus"], { onChange: "setViewStatus" })((
+    { viewStatus, onChange }
+) => (
+    <ul>
+        {statuses.map(({ id, label }) => (
+            <li key={id} className={viewStatus === id ? "active" : ""}>
+                <button onClick={() => onChange(id)}>{label}</button>
+            </li>
+        ))}
+    </ul>
+));
 
-const ClearCompleted = connect(
-    ["hasCompleted"],
-    { onClear: "clearedCompleted" })(
-class ClearCompleted extends React.Component {
-    static propTypes = {
-        hasCompleted: PropTypes.bool.isRequired,
-        onClear: PropTypes.func.isRequired,
+const ClearCompleted = connect(["hasCompleted"], {
+    onClear: "clearedCompleted"
+})(({ hasCompleted, onClear }) => {
+    if (!hasCompleted) {
+        return null;
     }
-    render () {
-        const { hasCompleted, onClear } = this.props
-        if (!hasCompleted) { return null }
 
-        return (<button onClick={onClear}>Clear Completed</button>)
-    }
-})
+    return <button onClick={onClear}>Clear Completed</button>;
+});
 
-function ViewOptions () {
-    return <div>
-        <ItemsLeft/>
-        <ViewStatus />
-        <ClearCompleted />
-    </div>
+function ViewOptions() {
+    return (
+        <div>
+            <ItemsLeft />
+            <ViewStatus />
+            <ClearCompleted />
+        </div>
+    );
 }
 
-export default function App () {
+export default function App() {
     return (
         <div className="App">
             <header className="App__header">
@@ -199,5 +160,5 @@ export default function App () {
                 <p>Part of TodoMVC</p>
             </div>
         </div>
-    )
+    );
 }
