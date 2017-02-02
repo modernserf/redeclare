@@ -23,6 +23,6 @@ export { createActions } from "./actions";
 // [Reducers](reducers.html)
 export { createReducer } from "./reducers";
 // [Selectors](selectors.html)
-export { createSchema, selector, reducer, scope } from "./schema";
+export { createSchema, selector, reducer } from "./schema";
 // [Connector](connector.html)
 export { createConnector } from "./connector";

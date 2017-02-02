@@ -5,7 +5,6 @@ const keyBy = require("lodash/keyBy");
 const mapValues = require("lodash/mapValues");
 import { createSchema, reducer, selector } from "./schema";
 import { scopedAction } from "./scope";
-import { select } from "./selector";
 
 export function test_createConnector(t) {
     const schema = createSchema(
@@ -16,11 +15,8 @@ export function test_createConnector(t) {
         {
             baz: reducer({ foo: state => state + 1 }, 0),
             quux: reducer({ bar: (state, { value }) => state + value }, ""),
-            bazPlusTen: selector(["baz"], ({ baz }) => baz + 10),
-            bazAndQuux: selector(
-                ["baz", "quux"],
-                ({ baz, quux }) => `${baz}-${quux}`
-            )
+            bazPlusTen: selector("baz", baz => baz + 10),
+            bazAndQuux: selector("baz", "quux", (baz, quux) => `${baz}-${quux}`)
         }
     );
 
@@ -53,11 +49,8 @@ export function test_createConnector_renamed_keys(t) {
         {
             baz: reducer({ foo: state => state + 1 }, 0),
             quux: reducer({ bar: (state, { value }) => state + value }, ""),
-            bazPlusTen: selector(["baz"], ({ baz }) => baz + 10),
-            bazAndQuux: selector(
-                ["baz", "quux"],
-                ({ baz, quux }) => `${baz}-${quux}`
-            )
+            bazPlusTen: selector("baz", ({ baz }) => baz + 10),
+            bazAndQuux: selector("baz", "quux", (baz, quux) => `${baz}-${quux}`)
         }
     );
 
@@ -102,13 +95,15 @@ export function __test_createConnector_scope(t) {
             bar: {
                 counter: counter(["bar"]),
                 countPlusTen: selector(
-                    [["bar", "counter"], "parentValue"],
+                    ["bar", "counter"],
+                    "parentValue",
                     ({ counter, parentValue }) => counter + parentValue
                 )
             },
             fooPlusBarPlusTen: selector(
-                { foo: "foo", bar: ["bar", "countPlusTen"] },
-                ({ foo, bar }) => foo.counter + bar
+                "foo",
+                ["bar", "countPlusTen"],
+                (foo, bar) => foo.counter + bar
             )
         }
     );
@@ -163,23 +158,24 @@ function connector(schema, selectorIDs, actionIDs) {
 }
 
 function mapState(selectors, selectorIDs) {
-    return state => select(state, selectors, selectorIDs);
+    const pickedSelectors = pickAndRename(selectors, selectorIDs);
+    return state => mapValues(pickedSelectors, selector => selector(state));
 }
 
 function mapActions(actions, actionIDs) {
     return dispatch => {
-        const picked = pickAndRename(actions, actionIDs);
-        return bindActionCreators(picked, dispatch);
+        const pickedActions = pickAndRename(actions, actionIDs);
+        return bindActionCreators(pickedActions, dispatch);
     };
 }
 
 function pickAndRename(object, keys) {
     const keyMap = Array.isArray(keys) ? keyBy(keys, k => k) : keys;
 
-    return mapValues(keyMap, actionType => {
-        const found = get(object, actionType);
+    return mapValues(keyMap, path => {
+        const found = get(object, path);
         if (!found) {
-            throw new Error(`Unknown action type: ${actionType}`);
+            throw new Error(`Unknown key: ${path}`);
         }
         return found;
     });

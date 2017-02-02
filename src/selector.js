@@ -1,21 +1,11 @@
 import get from "lodash/get";
 
 export function select(state, selectors, dependencies) {
-    return toPairs(dependencies).reduce(
-        (params, [key, value]) => {
-            const dep = get(selectors, value);
-            if (!dep) {
-                throw new Error(`Unknown selector dependency: ${key}`);
-            }
-            params[key] = dep(state);
-            return params;
-        },
-        {}
-    );
-}
-
-function toPairs(obj) {
-    return Array.isArray(obj)
-        ? obj.map(key => [key, key])
-        : Object.keys(obj).map(key => [key, obj[key]]);
+    return dependencies.map(dep => {
+        const selector = get(selectors, dep);
+        if (!selector) {
+            throw new Error(`Unknown selector dependency: ${dep}`);
+        }
+        return selector(state);
+    });
 }

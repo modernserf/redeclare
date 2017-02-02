@@ -48,14 +48,15 @@ const schema = createSchema(
             status.all
         ),
         visibleTodos: selector(
-            ["todos", "viewStatus"],
-            ({ todos, viewStatus }) =>
+            "todos",
+            "viewStatus",
+            (todos, viewStatus) =>
                 viewStatus === status.all
                     ? todos
                     : todos.filter(({ status }) => status === viewStatus)
         ),
-        itemsLeft: selector(["todos"], ({ todos }) => todos.length),
-        hasCompleted: selector(["todos"], ({ todos }) =>
+        itemsLeft: selector("todos", todos => todos.length),
+        hasCompleted: selector("todos", todos =>
             todos.some(todo => todo.status === status.completed))
     }
 );

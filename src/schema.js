@@ -84,11 +84,8 @@ export function test_createSchema_selectors(t) {
     const { selectors } = createSchema(actions, {
         baz: reducer({ foo: state => state + 1 }, 0),
         quux: reducer({ bar: (state, { value }) => state + value }, ""),
-        bazPlusTen: selector(["baz"], ({ baz }) => baz + 10),
-        bazAndQuux: selector(
-            ["baz", "quux"],
-            ({ baz, quux }) => `${baz}-${quux}`
-        )
+        bazPlusTen: selector("baz", baz => baz + 10),
+        bazAndQuux: selector("baz", "quux", (baz, quux) => `${baz}-${quux}`)
     });
 
     t.comment("selectors with dependencies");
@@ -116,8 +113,9 @@ export function test_createSchema_nested_selectors(t) {
                     0
                 ),
                 countPlusTen: selector(
-                    { counter: ["foo", "counter"], parentValue: "parentValue" },
-                    ({ counter, parentValue }) => counter + parentValue
+                    ["foo", "counter"],
+                    "parentValue",
+                    (counter, parentValue) => counter + parentValue
                 )
             }
         }
@@ -169,13 +167,15 @@ export function test_createSchema_scopes(t) {
             bar: {
                 counter: counter(["bar"]),
                 countPlusTen: selector(
-                    { counter: ["bar", "counter"], parentValue: "parentValue" },
-                    ({ counter, parentValue }) => counter + parentValue
+                    ["bar", "counter"],
+                    "parentValue",
+                    (counter, parentValue) => counter + parentValue
                 )
             },
             fooPlusBarPlusTen: selector(
-                { foo: "foo", bar: ["bar", "countPlusTen"] },
-                ({ foo, bar }) => foo.counter + bar
+                "foo",
+                ["bar", "countPlusTen"],
+                (foo, countPlusTen) => foo.counter + countPlusTen
             )
         }
     );
@@ -270,13 +270,15 @@ function _createSchema(actions, defs, rootSelectors, scopePath = []) {
 }
 
 function createSelector(selectors, dependencies, mapParams) {
-    return state => mapParams(select(state, selectors, dependencies));
+    return state => mapParams(...select(state, selectors, dependencies));
 }
 
 export function reducer(reducer, initState, scope) {
     return { type: "reducer", reducer, initState, scope };
 }
 
-export function selector(dependencies, selector) {
+export function selector(...args) {
+    const dependencies = args.slice(0, -1);
+    const selector = args.pop();
     return { type: "selector", dependencies, selector };
 }
