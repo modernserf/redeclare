@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Schema</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="actions.html">
+                  actions.js
+                </a>
+              
+                
+                <a class="source" href="connector.html">
+                  connector.js
+                </a>
+              
+                
+                <a class="source" href="index.html">
+                  index.js
+                </a>
+              
+                
+                <a class="source" href="reducers.html">
+                  reducers.js
+                </a>
+              
+                
+                <a class="source" href="schema.html">
+                  schema.js
+                </a>
+              
+                
+                <a class="source" href="scope.html">
+                  scope.js
+                </a>
+              
+                
+                <a class="source" href="selector.html">
+                  selector.js
+                </a>
+              
+                
+                <a class="source" href="test.html">
+                  test.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="schema">Schema</h1>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">const</span> get = <span class="hljs-built_in">require</span>(<span class="hljs-string">"lodash/get"</span>);
+<span class="hljs-keyword">const</span> mapValues = <span class="hljs-built_in">require</span>(<span class="hljs-string">"lodash/mapValues"</span>);
+<span class="hljs-keyword">const</span> { combineReducers } = <span class="hljs-built_in">require</span>(<span class="hljs-string">"redux"</span>);
+<span class="hljs-keyword">import</span> { createActions } <span class="hljs-keyword">from</span> <span class="hljs-string">"./actions"</span>;
+<span class="hljs-keyword">import</span> { createReducer } <span class="hljs-keyword">from</span> <span class="hljs-string">"./reducers"</span>;
+<span class="hljs-keyword">import</span> { select } <span class="hljs-keyword">from</span> <span class="hljs-string">"./selector"</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p><strong>createSchema</strong> creates a root reducer and an object map of selectors – functions that return segments of the app state.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createSchema_plain_reducers</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> actions = {
+        <span class="hljs-attr">foo</span>: [],
+        <span class="hljs-attr">bar</span>: [<span class="hljs-string">"value"</span>]
+    };
+
+    <span class="hljs-keyword">const</span> { reducer, selectors } = createSchema(actions, {
+        <span class="hljs-attr">baz</span>: <span class="hljs-function">(<span class="hljs-params">state = <span class="hljs-number">0</span>, action</span>) =&gt;</span> action.type === <span class="hljs-string">"foo"</span> ? state + <span class="hljs-number">1</span> : state,
+        <span class="hljs-attr">quux</span>: <span class="hljs-function">(<span class="hljs-params">state = <span class="hljs-string">""</span>, action</span>) =&gt;</span>
+            action.type === <span class="hljs-string">"bar"</span> ? state + action.value : state
+    });
+
+    t.deepEqual(
+        reducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"init"</span> }),
+        { <span class="hljs-attr">baz</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">quux</span>: <span class="hljs-string">""</span> },
+        <span class="hljs-string">"reducer init state"</span>
+    );
+
+    t.comment(<span class="hljs-string">"reducers handle actions"</span>);
+    t.deepEqual(reducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"foo"</span> }), { <span class="hljs-attr">baz</span>: <span class="hljs-number">1</span>, <span class="hljs-attr">quux</span>: <span class="hljs-string">""</span> });
+    t.deepEqual(reducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"bar"</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">"str"</span> }), {
+        <span class="hljs-attr">baz</span>: <span class="hljs-number">0</span>,
+        <span class="hljs-attr">quux</span>: <span class="hljs-string">"str"</span>
+    });
+
+    t.comment(<span class="hljs-string">"selectors traverse state"</span>);
+    <span class="hljs-keyword">const</span> state = { <span class="hljs-attr">baz</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">quux</span>: <span class="hljs-string">"str"</span> };
+    t.equal(selectors.baz(state), <span class="hljs-number">10</span>);
+    t.equal(selectors.quux(state), <span class="hljs-string">"str"</span>);
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createSchema_map_reducers</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> actions = {
+        <span class="hljs-attr">foo</span>: [],
+        <span class="hljs-attr">bar</span>: [<span class="hljs-string">"value"</span>]
+    };
+
+    <span class="hljs-keyword">const</span> { <span class="hljs-attr">reducer</span>: rootReducer, selectors } = createSchema(actions, {
+        <span class="hljs-attr">baz</span>: reducer({ <span class="hljs-attr">foo</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span> }, <span class="hljs-number">0</span>),
+        <span class="hljs-attr">quux</span>: reducer({ <span class="hljs-attr">bar</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value }, <span class="hljs-string">""</span>)
+    });
+
+    t.comment(<span class="hljs-string">"map reducers handle actions"</span>);
+    t.deepEqual(rootReducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"foo"</span> }), { <span class="hljs-attr">baz</span>: <span class="hljs-number">1</span>, <span class="hljs-attr">quux</span>: <span class="hljs-string">""</span> });
+    t.deepEqual(rootReducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"bar"</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">"str"</span> }), {
+        <span class="hljs-attr">baz</span>: <span class="hljs-number">0</span>,
+        <span class="hljs-attr">quux</span>: <span class="hljs-string">"str"</span>
+    });
+
+    t.comment(<span class="hljs-string">"map selectors traverse state"</span>);
+    <span class="hljs-keyword">const</span> state = { <span class="hljs-attr">baz</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">quux</span>: <span class="hljs-string">"str"</span> };
+    t.equal(selectors.baz(state), <span class="hljs-number">10</span>);
+    t.equal(selectors.quux(state), <span class="hljs-string">"str"</span>);
+
+    t.throws(
+        <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+            createSchema(actions, {
+                <span class="hljs-attr">baz</span>: reducer({ <span class="hljs-attr">unknownAction</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state }, <span class="hljs-number">0</span>)
+            });
+        },
+        <span class="hljs-literal">undefined</span>,
+        <span class="hljs-string">"throws for unknown action"</span>
+    );
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createSchema_selectors</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> actions = {
+        <span class="hljs-attr">foo</span>: [],
+        <span class="hljs-attr">bar</span>: [<span class="hljs-string">"value"</span>]
+    };
+
+    <span class="hljs-keyword">const</span> { selectors } = createSchema(actions, {
+        <span class="hljs-attr">baz</span>: reducer({ <span class="hljs-attr">foo</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span> }, <span class="hljs-number">0</span>),
+        <span class="hljs-attr">quux</span>: reducer({ <span class="hljs-attr">bar</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value }, <span class="hljs-string">""</span>),
+        <span class="hljs-attr">bazPlusTen</span>: selector(<span class="hljs-string">"baz"</span>, baz =&gt; baz + <span class="hljs-number">10</span>),
+        <span class="hljs-attr">bazAndQuux</span>: selector(<span class="hljs-string">"baz"</span>, <span class="hljs-string">"quux"</span>, (baz, quux) =&gt; <span class="hljs-string">`<span class="hljs-subst">${baz}</span>-<span class="hljs-subst">${quux}</span>`</span>)
+    });
+
+    t.comment(<span class="hljs-string">"selectors with dependencies"</span>);
+    <span class="hljs-keyword">const</span> state = { <span class="hljs-attr">baz</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">quux</span>: <span class="hljs-string">"str"</span> };
+    t.equal(selectors.bazPlusTen(state), <span class="hljs-number">20</span>);
+    t.equal(selectors.bazAndQuux(state), <span class="hljs-string">"10-str"</span>);
+
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createSchema_nested_selectors</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> { actions, selectors, <span class="hljs-attr">reducer</span>: rootReducer } = createSchema(
+        {
+            <span class="hljs-attr">inc</span>: [],
+            <span class="hljs-attr">add</span>: [<span class="hljs-string">"value"</span>]
+        },
+        {
+            <span class="hljs-attr">parentValue</span>: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-number">10</span>,
+            <span class="hljs-attr">foo</span>: {
+                <span class="hljs-attr">counter</span>: reducer(
+                    {
+                        <span class="hljs-attr">inc</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span>,
+                        <span class="hljs-attr">add</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value
+                    },
+                    <span class="hljs-number">0</span>
+                ),
+                <span class="hljs-attr">countPlusTen</span>: selector(
+                    [<span class="hljs-string">"foo"</span>, <span class="hljs-string">"counter"</span>],
+                    <span class="hljs-string">"parentValue"</span>,
+                    (counter, parentValue) =&gt; counter + parentValue
+                )
+            }
+        }
+    );
+    t.deepEqual(rootReducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"init"</span> }), {
+        <span class="hljs-attr">parentValue</span>: <span class="hljs-number">10</span>,
+        <span class="hljs-attr">foo</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">0</span> }
+    });
+
+    <span class="hljs-keyword">const</span> state = { <span class="hljs-attr">parentValue</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">foo</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">5</span> } };
+
+    t.deepEqual(rootReducer(state, actions.inc()), {
+        <span class="hljs-attr">parentValue</span>: <span class="hljs-number">10</span>,
+        <span class="hljs-attr">foo</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">6</span> }
+    });
+
+    t.deepEqual(selectors.foo(state), { <span class="hljs-attr">counter</span>: <span class="hljs-number">5</span>, <span class="hljs-attr">countPlusTen</span>: <span class="hljs-number">15</span> });
+    t.equal(selectors.foo.countPlusTen(state), <span class="hljs-number">15</span>, <span class="hljs-string">"select foo count"</span>);
+
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createSchema_scopes</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> counter = <span class="hljs-function"><span class="hljs-params">scope</span> =&gt;</span> reducer(
+        {
+            <span class="hljs-attr">inc</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span>,
+            <span class="hljs-attr">add</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value
+        },
+        <span class="hljs-number">0</span>,
+        scope
+    );
+
+    <span class="hljs-keyword">const</span> { actions, selectors, <span class="hljs-attr">reducer</span>: rootReducer } = createSchema(
+        {
+            <span class="hljs-attr">foo</span>: {
+                <span class="hljs-attr">inc</span>: [],
+                <span class="hljs-attr">add</span>: [<span class="hljs-string">"value"</span>]
+            },
+            <span class="hljs-attr">bar</span>: {
+                <span class="hljs-attr">inc</span>: [],
+                <span class="hljs-attr">add</span>: [<span class="hljs-string">"value"</span>]
+            }
+        },
+        {
+            <span class="hljs-attr">parentValue</span>: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-number">10</span>,
+            <span class="hljs-attr">foo</span>: {
+                <span class="hljs-attr">counter</span>: counter([<span class="hljs-string">"foo"</span>])
+            },
+            <span class="hljs-attr">bar</span>: {
+                <span class="hljs-attr">counter</span>: counter([<span class="hljs-string">"bar"</span>]),
+                <span class="hljs-attr">countPlusTen</span>: selector(
+                    [<span class="hljs-string">"bar"</span>, <span class="hljs-string">"counter"</span>],
+                    <span class="hljs-string">"parentValue"</span>,
+                    (counter, parentValue) =&gt; counter + parentValue
+                )
+            },
+            <span class="hljs-attr">fooPlusBarPlusTen</span>: selector(
+                <span class="hljs-string">"foo"</span>,
+                [<span class="hljs-string">"bar"</span>, <span class="hljs-string">"countPlusTen"</span>],
+                (foo, countPlusTen) =&gt; foo.counter + countPlusTen
+            )
+        }
+    );
+
+    t.deepEqual(
+        rootReducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"init"</span> }),
+        { <span class="hljs-attr">parentValue</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">foo</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">0</span> }, <span class="hljs-attr">bar</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">0</span> } },
+        <span class="hljs-string">"reducer init state"</span>
+    );
+
+    <span class="hljs-keyword">const</span> state = { <span class="hljs-attr">parentValue</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">foo</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">5</span> }, <span class="hljs-attr">bar</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">3</span> } };
+    t.deepEqual(rootReducer(state, actions.foo.inc()), {
+        <span class="hljs-attr">parentValue</span>: <span class="hljs-number">10</span>,
+        <span class="hljs-attr">foo</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">6</span> },
+        <span class="hljs-attr">bar</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">3</span> }
+    });
+    t.deepEqual(rootReducer(state, actions.bar.add(<span class="hljs-number">2</span>)), {
+        <span class="hljs-attr">parentValue</span>: <span class="hljs-number">10</span>,
+        <span class="hljs-attr">foo</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">5</span> },
+        <span class="hljs-attr">bar</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">5</span> }
+    });
+
+    t.equal(selectors.foo.counter(state), <span class="hljs-number">5</span>);
+    t.equal(selectors.bar.counter(state), <span class="hljs-number">3</span>);
+    t.deepEqual(selectors.bar(state), { <span class="hljs-attr">counter</span>: <span class="hljs-number">3</span>, <span class="hljs-attr">countPlusTen</span>: <span class="hljs-number">13</span> });
+    t.equal(selectors.bar.countPlusTen(state), <span class="hljs-number">13</span>);
+    t.equal(selectors.fooPlusBarPlusTen(state), <span class="hljs-number">18</span>);
+
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">createSchema</span>(<span class="hljs-params">actionDefs, defs</span>) </span>{
+    <span class="hljs-keyword">const</span> actions = createActions(actionDefs);
+    <span class="hljs-keyword">const</span> rootSelectors = {};
+    <span class="hljs-keyword">const</span> schema = _createSchema(actions, defs, rootSelectors);
+    <span class="hljs-built_in">Object</span>.assign(rootSelectors, schema.selectors);
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">Object</span>.assign(schema, { actions });
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_createSchema</span>(<span class="hljs-params">actions, defs, rootSelectors, scopePath = []</span>) </span>{
+    <span class="hljs-keyword">const</span> createMapReducer = <span class="hljs-function">(<span class="hljs-params">{ reducer, initState, scope }</span>) =&gt;</span>
+        createReducer(actions, reducer, initState, scope);
+
+    <span class="hljs-keyword">const</span> mapSchemaDef = <span class="hljs-function">(<span class="hljs-params">def, key</span>) =&gt;</span> {
+        <span class="hljs-keyword">const</span> defaultSelector = <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> get(state, scopePath.concat([key]));
+        <span class="hljs-keyword">switch</span> (def.type) {
+            <span class="hljs-keyword">case</span> <span class="hljs-string">"reducer"</span>:
+                <span class="hljs-keyword">return</span> [createMapReducer(def), defaultSelector];
+            <span class="hljs-keyword">case</span> <span class="hljs-string">"selector"</span>:
+                <span class="hljs-keyword">return</span> [
+                    <span class="hljs-literal">null</span>,
+                    createSelector(
+                        rootSelectors,
+                        def.dependencies,
+                        def.selector
+                    )
+                ];
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>plain reducer function</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> def === <span class="hljs-string">"function"</span>) {
+            <span class="hljs-keyword">return</span> [def, defaultSelector];
+        }
+
+        <span class="hljs-keyword">const</span> schema = _createSchema(
+            actions,
+            def,
+            rootSelectors,
+            scopePath.concat([key])
+        );
+        <span class="hljs-keyword">return</span> [schema.reducer, schema.selectors];
+    };
+
+    <span class="hljs-keyword">const</span> rootSelector = <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> mapValues(selectors, fn =&gt; fn(state));
+
+    <span class="hljs-keyword">const</span> reducers = {};
+    <span class="hljs-keyword">const</span> selectors = {};
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> key <span class="hljs-keyword">in</span> defs) {
+        <span class="hljs-keyword">const</span> [reducer, selector] = mapSchemaDef(defs[key], key);
+        <span class="hljs-keyword">if</span> (reducer) {
+            reducers[key] = reducer;
+        }
+        <span class="hljs-keyword">if</span> (selector) {
+            selectors[key] = selector;
+        }
+    }
+
+    <span class="hljs-keyword">return</span> {
+        <span class="hljs-attr">reducer</span>: combineReducers(reducers),
+        <span class="hljs-attr">selectors</span>: <span class="hljs-built_in">Object</span>.assign(rootSelector, selectors)
+    };
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">createSelector</span>(<span class="hljs-params">selectors, dependencies, mapParams</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> mapParams(...select(state, selectors, dependencies));
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">reducer</span>(<span class="hljs-params">reducer, initState, scope</span>) </span>{
+    <span class="hljs-keyword">return</span> { <span class="hljs-attr">type</span>: <span class="hljs-string">"reducer"</span>, reducer, initState, scope };
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">selector</span>(<span class="hljs-params">...args</span>) </span>{
+    <span class="hljs-keyword">const</span> dependencies = args.slice(<span class="hljs-number">0</span>, <span class="hljs-number">-1</span>);
+    <span class="hljs-keyword">const</span> selector = args.pop();
+    <span class="hljs-keyword">return</span> { <span class="hljs-attr">type</span>: <span class="hljs-string">"selector"</span>, dependencies, selector };
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

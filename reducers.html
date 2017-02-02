@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Reducers</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="actions.html">
+                  actions.js
+                </a>
+              
+                
+                <a class="source" href="connector.html">
+                  connector.js
+                </a>
+              
+                
+                <a class="source" href="index.html">
+                  index.js
+                </a>
+              
+                
+                <a class="source" href="reducers.html">
+                  reducers.js
+                </a>
+              
+                
+                <a class="source" href="schema.html">
+                  schema.js
+                </a>
+              
+                
+                <a class="source" href="scope.html">
+                  scope.js
+                </a>
+              
+                
+                <a class="source" href="selector.html">
+                  selector.js
+                </a>
+              
+                
+                <a class="source" href="test.html">
+                  test.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="reducers">Reducers</h1>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">import</span> { createActions } <span class="hljs-keyword">from</span> <span class="hljs-string">"./actions"</span>;
+<span class="hljs-keyword">import</span> { scopedActionType } <span class="hljs-keyword">from</span> <span class="hljs-string">"./scope"</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p><strong>createReducer</strong> is a function for making reducers from an object of action-handling functions, similar to <a href="https://github.com/nrn/create-reducer">create-reducer</a>. Additionally, <code>createReducer</code> uses the action schema to check whether an action exists.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createReducer</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> actions = createActions({
+        <span class="hljs-attr">inc</span>: [],
+        <span class="hljs-attr">add</span>: [<span class="hljs-string">"value"</span>],
+        <span class="hljs-attr">set</span>: [<span class="hljs-string">"value"</span>]
+    });
+
+    <span class="hljs-keyword">const</span> reducer = createReducer(
+        actions,
+        {
+            <span class="hljs-attr">inc</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span>,
+            <span class="hljs-attr">add</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value,
+            <span class="hljs-attr">set</span>: <span class="hljs-function">(<span class="hljs-params">_, { value }</span>) =&gt;</span> value
+        },
+        <span class="hljs-number">0</span>
+    );
+
+    t.deepEqual(
+        reducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"init"</span> }),
+        <span class="hljs-number">0</span>,
+        <span class="hljs-string">"returns reducer initState"</span>
+    );
+    t.deepEqual(reducer(<span class="hljs-number">0</span>, actions.inc()), <span class="hljs-number">1</span>);
+    t.deepEqual(reducer(<span class="hljs-number">10</span>, actions.add(<span class="hljs-number">3</span>)), <span class="hljs-number">13</span>);
+    t.deepEqual(reducer(<span class="hljs-number">10</span>, actions.set(<span class="hljs-number">3</span>)), <span class="hljs-number">3</span>);
+    t.deepEqual(reducer(<span class="hljs-number">10</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"unknownAction"</span> }), <span class="hljs-number">10</span>);
+    t.end();
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>An unknown action in the reducer-per-action map will throw an error.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createReducer_unknown_action</span>(<span class="hljs-params">t</span>) </span>{
+    t.throws(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+        <span class="hljs-keyword">const</span> actions = createActions({
+            <span class="hljs-attr">foo</span>: [],
+            <span class="hljs-attr">bar</span>: [<span class="hljs-string">"value"</span>]
+        });
+
+        createReducer(actions, {
+            <span class="hljs-attr">unknownAction</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state
+        });
+    });
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createReducer_scope</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> actions = createActions({
+        <span class="hljs-attr">inc</span>: [],
+        <span class="hljs-attr">foo</span>: {
+            <span class="hljs-attr">add</span>: [<span class="hljs-string">"value"</span>],
+            <span class="hljs-attr">bar</span>: {
+                <span class="hljs-attr">set</span>: [<span class="hljs-string">"value"</span>]
+            }
+        },
+        <span class="hljs-attr">set</span>: [<span class="hljs-string">"value"</span>],
+        <span class="hljs-attr">baz</span>: {
+            <span class="hljs-attr">set</span>: [<span class="hljs-string">"value"</span>]
+        }
+    });
+
+    <span class="hljs-keyword">const</span> reducer = createReducer(
+        actions,
+        {
+            <span class="hljs-attr">inc</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span>,
+            <span class="hljs-attr">add</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value,
+            <span class="hljs-attr">set</span>: <span class="hljs-function">(<span class="hljs-params">_, { value }</span>) =&gt;</span> value
+        },
+        <span class="hljs-number">0</span>,
+        [<span class="hljs-string">"foo"</span>, <span class="hljs-string">"bar"</span>]
+    );
+
+    t.deepEqual(
+        reducer(<span class="hljs-literal">undefined</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"init"</span> }),
+        <span class="hljs-number">0</span>,
+        <span class="hljs-string">"returns reducer initState"</span>
+    );
+    t.deepEqual(reducer(<span class="hljs-number">0</span>, actions.inc()), <span class="hljs-number">1</span>);
+    t.deepEqual(reducer(<span class="hljs-number">10</span>, actions.foo.add(<span class="hljs-number">3</span>)), <span class="hljs-number">13</span>);
+    t.deepEqual(reducer(<span class="hljs-number">10</span>, actions.foo.bar.set(<span class="hljs-number">3</span>)), <span class="hljs-number">3</span>);
+    t.deepEqual(reducer(<span class="hljs-number">10</span>, actions.set(<span class="hljs-number">3</span>)), <span class="hljs-number">3</span>);
+    t.deepEqual(
+        reducer(<span class="hljs-number">10</span>, actions.baz.set(<span class="hljs-number">3</span>)),
+        <span class="hljs-number">10</span>,
+        <span class="hljs-string">"sibling actions do not affect reducer"</span>
+    );
+    t.deepEqual(reducer(<span class="hljs-number">10</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"unknownAction"</span> }), <span class="hljs-number">10</span>);
+
+    <span class="hljs-keyword">const</span> topReducer = createReducer(
+        actions,
+        {
+            <span class="hljs-attr">inc</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span>,
+            <span class="hljs-attr">set</span>: <span class="hljs-function">(<span class="hljs-params">_, { value }</span>) =&gt;</span> value
+        },
+        <span class="hljs-number">0</span>
+    );
+
+    t.deepEqual(topReducer(<span class="hljs-number">0</span>, actions.inc()), <span class="hljs-number">1</span>);
+    t.deepEqual(topReducer(<span class="hljs-number">10</span>, actions.set(<span class="hljs-number">3</span>)), <span class="hljs-number">3</span>);
+    t.deepEqual(
+        topReducer(<span class="hljs-number">10</span>, actions.foo.bar.set(<span class="hljs-number">3</span>)),
+        <span class="hljs-number">10</span>,
+        <span class="hljs-string">"child actions do not affect reducer"</span>
+    );
+
+    t.throws(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+        createReducer(
+            actions,
+            {
+                <span class="hljs-attr">inc</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span>,
+                <span class="hljs-attr">add</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value,
+                <span class="hljs-attr">set</span>: <span class="hljs-function">(<span class="hljs-params">_, { value }</span>) =&gt;</span> value
+            },
+            <span class="hljs-number">0</span>,
+            [<span class="hljs-string">"baz"</span>]
+        );
+    });
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">createReducer</span>(<span class="hljs-params">actions, baseReducers, initState, scope = []</span>) </span>{
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> type <span class="hljs-keyword">in</span> baseReducers) {
+        <span class="hljs-keyword">if</span> (!inScope(actions, type, scope)) {
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">`Unknown action type: <span class="hljs-subst">${type}</span>`</span>);
+        }
+    }
+
+    <span class="hljs-keyword">const</span> reducer = <span class="hljs-function">(<span class="hljs-params">state = initState, action, scopePath = scope</span>) =&gt;</span> {
+        <span class="hljs-keyword">if</span> (action.type === scopedActionType &amp;&amp; scopePath[<span class="hljs-number">0</span>] === action.scope) {
+            <span class="hljs-keyword">return</span> reducer(state, action.action, scopePath.slice(<span class="hljs-number">1</span>));
+        } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (baseReducers[action.type]) {
+            <span class="hljs-keyword">return</span> baseReducers[action.type](state, action);
+        } <span class="hljs-keyword">else</span> {
+            <span class="hljs-keyword">return</span> state;
+        }
+    };
+
+    <span class="hljs-keyword">return</span> reducer;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">inScope</span>(<span class="hljs-params">actions, type, scope</span>) </span>{
+    <span class="hljs-keyword">if</span> (!actions) {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+    }
+    <span class="hljs-keyword">if</span> (actions[type]) {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+    }
+    <span class="hljs-keyword">if</span> (!scope.length) {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+    }
+    <span class="hljs-keyword">return</span> inScope(actions[scope[<span class="hljs-number">0</span>]], type, scope.slice(<span class="hljs-number">1</span>));
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

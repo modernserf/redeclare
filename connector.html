@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>connector.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="actions.html">
+                  actions.js
+                </a>
+              
+                
+                <a class="source" href="connector.html">
+                  connector.js
+                </a>
+              
+                
+                <a class="source" href="index.html">
+                  index.js
+                </a>
+              
+                
+                <a class="source" href="reducers.html">
+                  reducers.js
+                </a>
+              
+                
+                <a class="source" href="schema.html">
+                  schema.js
+                </a>
+              
+                
+                <a class="source" href="scope.html">
+                  scope.js
+                </a>
+              
+                
+                <a class="source" href="selector.html">
+                  selector.js
+                </a>
+              
+                
+                <a class="source" href="test.html">
+                  test.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>connector.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p>Connector</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">const</span> { bindActionCreators } = <span class="hljs-built_in">require</span>(<span class="hljs-string">"redux"</span>);
+<span class="hljs-keyword">const</span> get = <span class="hljs-built_in">require</span>(<span class="hljs-string">"lodash/get"</span>);
+<span class="hljs-keyword">const</span> keyBy = <span class="hljs-built_in">require</span>(<span class="hljs-string">"lodash/keyBy"</span>);
+<span class="hljs-keyword">const</span> mapValues = <span class="hljs-built_in">require</span>(<span class="hljs-string">"lodash/mapValues"</span>);
+<span class="hljs-keyword">import</span> { createSchema, reducer, selector } <span class="hljs-keyword">from</span> <span class="hljs-string">"./schema"</span>;
+<span class="hljs-keyword">import</span> { scopedAction } <span class="hljs-keyword">from</span> <span class="hljs-string">"./scope"</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createConnector</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> schema = createSchema(
+        {
+            <span class="hljs-attr">foo</span>: [],
+            <span class="hljs-attr">bar</span>: [<span class="hljs-string">"value"</span>]
+        },
+        {
+            <span class="hljs-attr">baz</span>: reducer({ <span class="hljs-attr">foo</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span> }, <span class="hljs-number">0</span>),
+            <span class="hljs-attr">quux</span>: reducer({ <span class="hljs-attr">bar</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value }, <span class="hljs-string">""</span>),
+            <span class="hljs-attr">bazPlusTen</span>: selector(<span class="hljs-string">"baz"</span>, baz =&gt; baz + <span class="hljs-number">10</span>),
+            <span class="hljs-attr">bazAndQuux</span>: selector(<span class="hljs-string">"baz"</span>, <span class="hljs-string">"quux"</span>, (baz, quux) =&gt; <span class="hljs-string">`<span class="hljs-subst">${baz}</span>-<span class="hljs-subst">${quux}</span>`</span>)
+        }
+    );
+
+    <span class="hljs-keyword">const</span> initState = { <span class="hljs-attr">baz</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">quux</span>: <span class="hljs-string">"str"</span> };
+    <span class="hljs-keyword">const</span> connect = mock_connector(schema, initState);
+
+    <span class="hljs-keyword">const</span> { state, actions } = connect([<span class="hljs-string">"baz"</span>, <span class="hljs-string">"bazAndQuux"</span>], [<span class="hljs-string">"bar"</span>]);
+
+    t.equal(state.baz, <span class="hljs-number">10</span>);
+    t.equal(state.bazAndQuux, <span class="hljs-string">"10-str"</span>);
+
+    t.deepEqual(actions.bar(<span class="hljs-string">"str"</span>), { <span class="hljs-attr">type</span>: <span class="hljs-string">"bar"</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">"str"</span> });
+
+    t.throws(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+        connect([<span class="hljs-string">"baz"</span>, <span class="hljs-string">"unknownSelector"</span>], [<span class="hljs-string">"bar"</span>]);
+    });
+
+    t.throws(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+        connect([<span class="hljs-string">"baz"</span>], [<span class="hljs-string">"bar"</span>, <span class="hljs-string">"unknownAction"</span>]);
+    });
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">test_createConnector_renamed_keys</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> schema = createSchema(
+        {
+            <span class="hljs-attr">foo</span>: [],
+            <span class="hljs-attr">bar</span>: [<span class="hljs-string">"value"</span>]
+        },
+        {
+            <span class="hljs-attr">baz</span>: reducer({ <span class="hljs-attr">foo</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span> }, <span class="hljs-number">0</span>),
+            <span class="hljs-attr">quux</span>: reducer({ <span class="hljs-attr">bar</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value }, <span class="hljs-string">""</span>),
+            <span class="hljs-attr">bazPlusTen</span>: selector(<span class="hljs-string">"baz"</span>, ({ baz }) =&gt; baz + <span class="hljs-number">10</span>),
+            <span class="hljs-attr">bazAndQuux</span>: selector(<span class="hljs-string">"baz"</span>, <span class="hljs-string">"quux"</span>, (baz, quux) =&gt; <span class="hljs-string">`<span class="hljs-subst">${baz}</span>-<span class="hljs-subst">${quux}</span>`</span>)
+        }
+    );
+
+    <span class="hljs-keyword">const</span> initState = { <span class="hljs-attr">baz</span>: <span class="hljs-number">10</span>, <span class="hljs-attr">quux</span>: <span class="hljs-string">"str"</span> };
+    <span class="hljs-keyword">const</span> connect = mock_connector(schema, initState);
+    <span class="hljs-keyword">const</span> { state, actions } = connect({ <span class="hljs-attr">bazRenamed</span>: <span class="hljs-string">"baz"</span> }, {
+        <span class="hljs-attr">barRenamed</span>: <span class="hljs-string">"bar"</span>
+    });
+
+    t.equal(state.bazRenamed, <span class="hljs-number">10</span>);
+
+    t.deepEqual(actions.barRenamed(<span class="hljs-string">"str"</span>), { <span class="hljs-attr">type</span>: <span class="hljs-string">"bar"</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">"str"</span> });
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">__test_createConnector_scope</span>(<span class="hljs-params">t</span>) </span>{
+    <span class="hljs-keyword">const</span> counter = <span class="hljs-function"><span class="hljs-params">scope</span> =&gt;</span> reducer(
+        {
+            <span class="hljs-attr">inc</span>: <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> state + <span class="hljs-number">1</span>,
+            <span class="hljs-attr">add</span>: <span class="hljs-function">(<span class="hljs-params">state, { value }</span>) =&gt;</span> state + value
+        },
+        <span class="hljs-number">0</span>,
+        scope
+    );
+
+    <span class="hljs-keyword">const</span> schema = createSchema(
+        {
+            <span class="hljs-attr">foo</span>: {
+                <span class="hljs-attr">inc</span>: [],
+                <span class="hljs-attr">add</span>: [<span class="hljs-string">"value"</span>]
+            },
+            <span class="hljs-attr">bar</span>: {
+                <span class="hljs-attr">inc</span>: [],
+                <span class="hljs-attr">add</span>: [<span class="hljs-string">"value"</span>]
+            }
+        },
+        {
+            <span class="hljs-attr">parentValue</span>: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> <span class="hljs-number">10</span>,
+            <span class="hljs-attr">foo</span>: {
+                <span class="hljs-attr">counter</span>: counter([<span class="hljs-string">"foo"</span>])
+            },
+            <span class="hljs-attr">bar</span>: {
+                <span class="hljs-attr">counter</span>: counter([<span class="hljs-string">"bar"</span>]),
+                <span class="hljs-attr">countPlusTen</span>: selector(
+                    [<span class="hljs-string">"bar"</span>, <span class="hljs-string">"counter"</span>],
+                    <span class="hljs-string">"parentValue"</span>,
+                    ({ counter, parentValue }) =&gt; counter + parentValue
+                )
+            },
+            <span class="hljs-attr">fooPlusBarPlusTen</span>: selector(
+                <span class="hljs-string">"foo"</span>,
+                [<span class="hljs-string">"bar"</span>, <span class="hljs-string">"countPlusTen"</span>],
+                (foo, bar) =&gt; foo.counter + bar
+            )
+        }
+    );
+
+    <span class="hljs-keyword">const</span> initState = {
+        <span class="hljs-attr">parentValue</span>: <span class="hljs-number">10</span>,
+        <span class="hljs-attr">foo</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">5</span> },
+        <span class="hljs-attr">bar</span>: { <span class="hljs-attr">counter</span>: <span class="hljs-number">3</span> }
+    };
+    <span class="hljs-keyword">const</span> rootConnect = mock_connector(schema, initState);
+
+    <span class="hljs-keyword">const</span> {
+        <span class="hljs-attr">state</span>: rootState
+    } = rootConnect({ <span class="hljs-attr">val</span>: <span class="hljs-string">"parentValue"</span>, <span class="hljs-attr">count</span>: [<span class="hljs-string">"bar"</span>, <span class="hljs-string">"countPlusTen"</span>] }, {});
+
+    t.equal(rootState.val, <span class="hljs-number">10</span>);
+    t.equal(rootState.count, <span class="hljs-number">13</span>);
+
+    <span class="hljs-keyword">const</span> barConnect = mock_connector(schema, initState);
+    <span class="hljs-keyword">const</span> {
+        <span class="hljs-attr">state</span>: barState,
+        <span class="hljs-attr">actions</span>: barActions
+    } = barConnect([<span class="hljs-string">"fooPlusBarPlusTen"</span>, <span class="hljs-string">"counter"</span>], [<span class="hljs-string">"inc"</span>]);
+
+    t.equal(barState.fooPlusBarPlusTen, <span class="hljs-number">18</span>);
+    t.equal(barState.counter, <span class="hljs-number">3</span>);
+    t.deepEqual(barActions.inc(), scopedAction(<span class="hljs-string">"bar"</span>, { <span class="hljs-attr">type</span>: <span class="hljs-string">"inc"</span> }));
+
+    t.end();
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">createConnector</span>(<span class="hljs-params">schema, connect</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-function">(<span class="hljs-params">selectorIDs, actionIDs, mergeProps, options</span>) =&gt;</span> {
+        <span class="hljs-keyword">const</span> c = connector(schema, selectorIDs, actionIDs);
+        <span class="hljs-keyword">return</span> connect(
+            c.mapStateToProps,
+            c.mapDispatchToProps,
+            mergeProps,
+            options
+        );
+    };
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">connector</span>(<span class="hljs-params">schema, selectorIDs, actionIDs</span>) </span>{
+    <span class="hljs-keyword">const</span> mapStateToProps = <span class="hljs-keyword">typeof</span> selectorIDs === <span class="hljs-string">"function"</span>
+        ? selectorIDs
+        : mapState(schema.selectors, selectorIDs);
+    <span class="hljs-keyword">const</span> mapDispatchToProps = <span class="hljs-keyword">typeof</span> actionIDs === <span class="hljs-string">"function"</span>
+        ? actionIDs
+        : mapActions(schema.actions, actionIDs);
+    <span class="hljs-keyword">return</span> { mapStateToProps, mapDispatchToProps };
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">mapState</span>(<span class="hljs-params">selectors, selectorIDs</span>) </span>{
+    <span class="hljs-keyword">const</span> pickedSelectors = pickAndRename(selectors, selectorIDs);
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> mapValues(pickedSelectors, selector =&gt; selector(state));
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">mapActions</span>(<span class="hljs-params">actions, actionIDs</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-params">dispatch</span> =&gt;</span> {
+        <span class="hljs-keyword">const</span> pickedActions = pickAndRename(actions, actionIDs);
+        <span class="hljs-keyword">return</span> bindActionCreators(pickedActions, dispatch);
+    };
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">pickAndRename</span>(<span class="hljs-params">object, keys</span>) </span>{
+    <span class="hljs-keyword">const</span> keyMap = <span class="hljs-built_in">Array</span>.isArray(keys) ? keyBy(keys, k =&gt; k) : keys;
+
+    <span class="hljs-keyword">return</span> mapValues(keyMap, path =&gt; {
+        <span class="hljs-keyword">const</span> found = get(object, path);
+        <span class="hljs-keyword">if</span> (!found) {
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">`Unknown key: <span class="hljs-subst">${path}</span>`</span>);
+        }
+        <span class="hljs-keyword">return</span> found;
+    });
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">mock_connector</span>(<span class="hljs-params">schema, initState</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-function">(<span class="hljs-params">selectorIDs, actionIDs</span>) =&gt;</span> {
+        <span class="hljs-keyword">const</span> c = connector(schema, selectorIDs, actionIDs);
+        <span class="hljs-keyword">const</span> state = c.mapStateToProps(initState);
+        <span class="hljs-keyword">const</span> actions = c.mapDispatchToProps(<span class="hljs-function"><span class="hljs-params">x</span> =&gt;</span> x);
+        <span class="hljs-keyword">return</span> { state, actions };
+    };
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

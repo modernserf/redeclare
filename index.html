@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>redeclare</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="actions.html">
+                  actions.js
+                </a>
+              
+                
+                <a class="source" href="connector.html">
+                  connector.js
+                </a>
+              
+                
+                <a class="source" href="index.html">
+                  index.js
+                </a>
+              
+                
+                <a class="source" href="reducers.html">
+                  reducers.js
+                </a>
+              
+                
+                <a class="source" href="schema.html">
+                  schema.js
+                </a>
+              
+                
+                <a class="source" href="scope.html">
+                  scope.js
+                </a>
+              
+                
+                <a class="source" href="selector.html">
+                  selector.js
+                </a>
+              
+                
+                <a class="source" href="test.html">
+                  test.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="redeclare">redeclare</h1>
+<p>Declarative action &amp; state management for redux</p>
+<h2 id="introduction">Introduction</h2>
+<p>Redux is a simple but flexible library for managing state in javascript applications using a programming model similar to <a href="http://martinfowler.com/eaaDev/EventSourcing.html">event sourcing</a>. Redux’s flexibility comes from the small but highly composable set of functions that compose its API; this flexibility in turn has enabled a sizable ecosystem of plugins and helpers for redux.</p>
+<p>However, the simplicity comes at a cost. Redux has a reputation for both the complexity of its configuration and its tendency towards boilerplate. Many libraries that promise to reduce this complexity and repetition do so at the cost of Redux’s <em>soul</em> – the many-to-many mapping of actions to state.</p>
+<p>Redeclare is an attempt to reduce the boilerplate of Redux configuration in a form that takes advantage of Redux’s best qualities. Its focused on creating <em>schemas</em> for actions and state that serve as both documentation and configuration, replacing the need for repetititve files full of constants and complex assemblages of helper functions.</p>
+<h2 id="examples-todo-">Examples (TODO)</h2>
+<ul>
+<li>Counter [code] [demo]</li>
+<li>Todo List [code] [demo]</li>
+<li>Pixquisite [code] [demo]</li>
+</ul>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <h2 id="api">API</h2>
+<p>TODO: overview of public API</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p><a href="actions.html">Actions</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">export</span> { createActions } <span class="hljs-keyword">from</span> <span class="hljs-string">"./actions"</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p><a href="reducers.html">Reducers</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">export</span> { createReducer } <span class="hljs-keyword">from</span> <span class="hljs-string">"./reducers"</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p><a href="selectors.html">Selectors</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">export</span> { createSchema, selector, reducer } <span class="hljs-keyword">from</span> <span class="hljs-string">"./schema"</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p><a href="connector.html">Connector</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">export</span> { createConnector } <span class="hljs-keyword">from</span> <span class="hljs-string">"./connector"</span>;</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
