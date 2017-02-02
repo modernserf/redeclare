@@ -1,5 +1,6 @@
 // # Schema
 const get = require("lodash/get");
+const mapValues = require("lodash/mapValues");
 const { combineReducers } = require("redux");
 import { createActions } from "./actions";
 import { createReducer } from "./reducers";
@@ -98,13 +99,55 @@ export function test_createSchema_selectors(t) {
     t.end();
 }
 
+export function test_createSchema_nested_selectors(t) {
+    const { actions, selectors, reducer: rootReducer } = createSchema(
+        {
+            inc: [],
+            add: ["value"]
+        },
+        {
+            parentValue: () => 10,
+            foo: {
+                counter: reducer(
+                    {
+                        inc: state => state + 1,
+                        add: (state, { value }) => state + value
+                    },
+                    0
+                ),
+                countPlusTen: selector(
+                    { counter: ["foo", "counter"], parentValue: "parentValue" },
+                    ({ counter, parentValue }) => counter + parentValue
+                )
+            }
+        }
+    );
+    t.deepEqual(rootReducer(undefined, { type: "init" }), {
+        parentValue: 10,
+        foo: { counter: 0 }
+    });
+
+    const state = { parentValue: 10, foo: { counter: 5 } };
+
+    t.deepEqual(rootReducer(state, actions.inc()), {
+        parentValue: 10,
+        foo: { counter: 6 }
+    });
+
+    t.deepEqual(selectors.foo(state), { counter: 5, countPlusTen: 15 });
+    t.equal(selectors.foo.countPlusTen(state), 15, "select foo count");
+
+    t.end();
+}
+
 export function test_createSchema_scopes(t) {
-    const counter = reducer(
+    const counter = scope => reducer(
         {
             inc: state => state + 1,
             add: (state, { value }) => state + value
         },
-        0
+        0,
+        scope
     );
 
     const { actions, selectors, reducer: rootReducer } = createSchema(
@@ -120,14 +163,16 @@ export function test_createSchema_scopes(t) {
         },
         {
             parentValue: () => 10,
-            foo: scope({ counter }),
-            bar: scope({
-                counter,
+            foo: {
+                counter: counter(["foo"])
+            },
+            bar: {
+                counter: counter(["bar"]),
                 countPlusTen: selector(
-                    ["counter", "parentValue"],
+                    { counter: ["bar", "counter"], parentValue: "parentValue" },
                     ({ counter, parentValue }) => counter + parentValue
                 )
-            }),
+            },
             fooPlusBarPlusTen: selector(
                 { foo: "foo", bar: ["bar", "countPlusTen"] },
                 ({ foo, bar }) => foo.counter + bar
@@ -155,7 +200,7 @@ export function test_createSchema_scopes(t) {
 
     t.equal(selectors.foo.counter(state), 5);
     t.equal(selectors.bar.counter(state), 3);
-    t.deepEqual(selectors.bar(state), { counter: 3 });
+    t.deepEqual(selectors.bar(state), { counter: 3, countPlusTen: 13 });
     t.equal(selectors.bar.countPlusTen(state), 13);
     t.equal(selectors.fooPlusBarPlusTen(state), 18);
 
@@ -163,19 +208,19 @@ export function test_createSchema_scopes(t) {
 }
 
 export function createSchema(actionDefs, defs) {
-    return _createSchema(createActions(actionDefs), defs, {}, []);
+    const actions = createActions(actionDefs);
+    const rootSelectors = {};
+    const schema = _createSchema(actions, defs, rootSelectors);
+    Object.assign(rootSelectors, schema.selectors);
+    return Object.assign(schema, { actions });
 }
 
-function _createSchema(actions, defs, selectors, scope) {
-    const reducers = {};
-
-    const createMapReducer = ({ reducer, initState }) =>
+function _createSchema(actions, defs, rootSelectors, scopePath = []) {
+    const createMapReducer = ({ reducer, initState, scope }) =>
         createReducer(actions, reducer, initState, scope);
 
     const mapSchemaDef = (def, key) => {
-        const nextScope = scope.concat([key]);
-        const defaultSelector = state => get(state, nextScope);
-
+        const defaultSelector = state => get(state, scopePath.concat([key]));
         switch (def.type) {
             case "reducer":
                 return [createMapReducer(def), defaultSelector];
@@ -183,29 +228,30 @@ function _createSchema(actions, defs, selectors, scope) {
                 return [
                     null,
                     createSelector(
-                        selectors,
+                        rootSelectors,
                         def.dependencies,
-                        def.selector,
-                        scope
+                        def.selector
                     )
                 ];
-            case "scope": {
-                const childSchema = _createSchema(
-                    actions,
-                    def.selectors,
-                    selectors,
-                    nextScope
-                );
-                const selector = Object.assign(
-                    defaultSelector,
-                    childSchema.selectors
-                );
-                return [childSchema.reducer, selector];
-            }
-            default:
-                return [def, defaultSelector];
         }
+        // plain reducer function
+        if (typeof def === "function") {
+            return [def, defaultSelector];
+        }
+
+        const schema = _createSchema(
+            actions,
+            def,
+            rootSelectors,
+            scopePath.concat([key])
+        );
+        return [schema.reducer, schema.selectors];
     };
+
+    const rootSelector = state => mapValues(selectors, fn => fn(state));
+
+    const reducers = {};
+    const selectors = {};
 
     for (const key in defs) {
         const [reducer, selector] = mapSchemaDef(defs[key], key);
@@ -217,21 +263,20 @@ function _createSchema(actions, defs, selectors, scope) {
         }
     }
 
-    return { actions, reducer: combineReducers(reducers), selectors };
+    return {
+        reducer: combineReducers(reducers),
+        selectors: Object.assign(rootSelector, selectors)
+    };
 }
 
-function createSelector(selectors, dependencies, mapParams, scope) {
-    return state => mapParams(select(state, selectors, dependencies, scope));
+function createSelector(selectors, dependencies, mapParams) {
+    return state => mapParams(select(state, selectors, dependencies));
 }
 
-export function reducer(reducer, initState) {
-    return { type: "reducer", reducer, initState };
+export function reducer(reducer, initState, scope) {
+    return { type: "reducer", reducer, initState, scope };
 }
 
 export function selector(dependencies, selector) {
     return { type: "selector", dependencies, selector };
-}
-
-export function scope(selectors) {
-    return { type: "scope", selectors };
 }

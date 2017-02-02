@@ -1,4 +1,3 @@
-const isPlainObject = require("lodash/isPlainObject");
 const mapValues = require("lodash/mapValues");
 import { buildScope, scopedAction } from "./scope";
 // # Actions
@@ -92,7 +91,7 @@ function createAction(type, args, scope) {
     if (typeof args === "function") {
         return args;
     }
-    if (isPlainObject(args)) {
+    if (!Array.isArray(args)) {
         return createActions(args, scope.concat([type]));
     }
 

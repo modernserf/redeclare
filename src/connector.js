@@ -1,10 +1,10 @@
 // Connector
 const { bindActionCreators } = require("redux");
-const { connect } = require("react-redux");
+const get = require("lodash/get");
 const keyBy = require("lodash/keyBy");
 const mapValues = require("lodash/mapValues");
-import { createSchema, reducer, selector, scope } from "./schema";
-import { getScope, scopedAction, findIn } from "./scope";
+import { createSchema, reducer, selector } from "./schema";
+import { scopedAction } from "./scope";
 import { select } from "./selector";
 
 export function test_createConnector(t) {
@@ -73,13 +73,14 @@ export function test_createConnector_renamed_keys(t) {
     t.end();
 }
 
-export function test_createConnector_scope(t) {
-    const counter = reducer(
+export function __test_createConnector_scope(t) {
+    const counter = scope => reducer(
         {
             inc: state => state + 1,
             add: (state, { value }) => state + value
         },
-        0
+        0,
+        scope
     );
 
     const schema = createSchema(
@@ -95,14 +96,16 @@ export function test_createConnector_scope(t) {
         },
         {
             parentValue: () => 10,
-            foo: scope({ counter }),
-            bar: scope({
-                counter,
+            foo: {
+                counter: counter(["foo"])
+            },
+            bar: {
+                counter: counter(["bar"]),
                 countPlusTen: selector(
-                    ["counter", "parentValue"],
+                    [["bar", "counter"], "parentValue"],
                     ({ counter, parentValue }) => counter + parentValue
                 )
-            }),
+            },
             fooPlusBarPlusTen: selector(
                 { foo: "foo", bar: ["bar", "countPlusTen"] },
                 ({ foo, bar }) => foo.counter + bar
@@ -124,7 +127,7 @@ export function test_createConnector_scope(t) {
     t.equal(rootState.val, 10);
     t.equal(rootState.count, 13);
 
-    const barConnect = mock_connector(schema, initState, ["bar"]);
+    const barConnect = mock_connector(schema, initState);
     const {
         state: barState,
         actions: barActions
@@ -137,16 +140,15 @@ export function test_createConnector_scope(t) {
     t.end();
 }
 
-export function createConnector(schema) {
+export function createConnector(schema, connect) {
     return (selectorIDs, actionIDs, mergeProps, options) => {
         const c = connector(schema, selectorIDs, actionIDs);
-        const conn = connect(
+        return connect(
             c.mapStateToProps,
             c.mapDispatchToProps,
             mergeProps,
             options
         );
-        return Component => getScope(conn(Component));
     };
 }
 
@@ -161,20 +163,21 @@ function connector(schema, selectorIDs, actionIDs) {
 }
 
 function mapState(selectors, selectorIDs) {
-    return (state, { scope }) => select(state, selectors, selectorIDs, scope);
+    return state => select(state, selectors, selectorIDs);
 }
 
 function mapActions(actions, actionIDs) {
-    return (dispatch, { scope } = {}) => {
-        const picked = pickAndRename(actions, actionIDs, scope);
+    return dispatch => {
+        const picked = pickAndRename(actions, actionIDs);
         return bindActionCreators(picked, dispatch);
     };
 }
 
-function pickAndRename(object, keys, scope) {
+function pickAndRename(object, keys) {
     const keyMap = Array.isArray(keys) ? keyBy(keys, k => k) : keys;
+
     return mapValues(keyMap, actionType => {
-        const found = findIn(object, scope, actionType);
+        const found = get(object, actionType);
         if (!found) {
             throw new Error(`Unknown action type: ${actionType}`);
         }
@@ -182,11 +185,11 @@ function pickAndRename(object, keys, scope) {
     });
 }
 
-function mock_connector(schema, initState, scope = []) {
+function mock_connector(schema, initState) {
     return (selectorIDs, actionIDs) => {
         const c = connector(schema, selectorIDs, actionIDs);
-        const state = c.mapStateToProps(initState, { scope });
-        const actions = c.mapDispatchToProps(x => x, { scope });
+        const state = c.mapStateToProps(initState);
+        const actions = c.mapDispatchToProps(x => x);
         return { state, actions };
     };
 }

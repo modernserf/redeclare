@@ -1,9 +1,9 @@
-import { findIn } from "./scope";
+import get from "lodash/get";
 
-export function select(state, selectors, dependencies, scope) {
+export function select(state, selectors, dependencies) {
     return toPairs(dependencies).reduce(
         (params, [key, value]) => {
-            const dep = findIn(selectors, scope, value);
+            const dep = get(selectors, value);
             if (!dep) {
                 throw new Error(`Unknown selector dependency: ${key}`);
             }

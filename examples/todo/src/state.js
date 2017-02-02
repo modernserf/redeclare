@@ -1,4 +1,5 @@
 import { createStore } from "redux";
+import { connect as reduxConnect } from "react-redux";
 import { createSchema, createConnector, reducer, selector } from "redeclare";
 
 const status = {
@@ -63,4 +64,4 @@ export const store = createStore(
     schema.reducer,
     window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
 );
-export const connect = createConnector(schema);
+export const connect = createConnector(schema, reduxConnect);
