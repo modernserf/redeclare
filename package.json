@@ -1,6 +1,6 @@
 {
   "name": "redeclare",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Declarative action and state management for redux",
   "main": "lib/index.js",
   "files": [
@@ -52,8 +52,8 @@
   },
   "dependencies": {
     "lodash": "^4.17.2"
-},
-    "peerDependencies": {
-        "redux": "3.x"
-    }
+  },
+  "peerDependencies": {
+    "redux": "3.x"
+  }
 }
