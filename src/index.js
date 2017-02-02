@@ -8,7 +8,7 @@
 //
 // However, the simplicity comes at a cost. Redux has a reputation for both the complexity of its configuration and its tendency towards boilerplate. Many libraries that promise to reduce this complexity and repetition do so at the cost of Redux's _soul_ -- the many-to-many mapping of actions to state.
 //
-// Redeclare is an attempt to reduce the boilerplate of Redux configuration in a form that takes advantage of Redux's best qualities. Its focused on creating _types_ and _schemas_ for actions and state that serve as both documentation and configuration, replacing the need for repetititve files full of constants and complex assemblages of helper functions.
+// Redeclare is an attempt to reduce the boilerplate of Redux configuration in a form that takes advantage of Redux's best qualities. Its focused on creating _schemas_ for actions and state that serve as both documentation and configuration, replacing the need for repetititve files full of constants and complex assemblages of helper functions.
 //
 // ## Examples (TODO)
 // - Counter [code] [demo]
@@ -16,16 +16,13 @@
 // - Pixquisite [code] [demo]
 
 // ## API
-// TODO: should the public API docs be here or in the files?
+// TODO: overview of public API
 
-// [Types](types.html)
-export {
-    types, createType,
-    namespace, addFields, composeModifiers,
-} from "./types"
 // [Actions](actions.html)
-export { createActions } from "./actions"
+export { createActions } from "./actions";
 // [Reducers](reducers.html)
-export { createReducer, createReducerCreator } from "./reducers"
+export { createReducer } from "./reducers";
 // [Selectors](selectors.html)
-export { createSelectors, select } from "./selectors"
+export { createSchema, selector, reducer } from "./schema";
+// [Connector](connector.html)
+export { createConnector } from "./connector";

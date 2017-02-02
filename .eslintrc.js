@@ -1,19 +1,24 @@
 module.exports = {
-    parser: "babel-eslint",
+    "parserOptions": {
+        "ecmaVersion": 2017,
+        "sourceType": "module",
+        "ecmaFeatures": {
+            "jsx": true
+        }
+    },
+    env: {
+        es6: true,
+        browser: true,
+        node: true,
+    },
     extends: [
-        "standard",
+        "eslint:recommended",
         "plugin:import/errors",
         "plugin:react/recommended",
     ],
-    plugins: ["standard","import","react"],
+    plugins: ["import","react", "prettier"],
     rules: {
-      "object-curly-spacing": ["error", "always"],
-      "quotes": ["error","double", {
-          "avoidEscape": true,
-          "allowTemplateLiterals": true,
-        }],
-      "comma-dangle": ["error","always-multiline"],
-      "indent": ["error", 4],
-      "camelcase": ["off"]
+      "prettier/prettier": ["error",{tabWidth: 4}],
+      "react/prop-types": "off",
     }
 };
